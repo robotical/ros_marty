@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package>
+  <name>ros_marty</name>
+  <version>0.0.1</version>
+  <description>The ros_marty package</description>
+
+  <maintainer email="alex.bordallo@robotical.io">Alejandro Bordallo</maintainer>
+
+  <license>Apache</license>
+
+  <!-- <url type="website">http://wiki.ros.org/ros_marty</url> -->
+  <url type="website">http://robotical.io/</url>
+
+  <author email="jane.doe@example.com">Jane Doe</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>marty_msgs</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <run_depend>marty_msgs</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>std_msgs</run_depend>
+
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+
+  </export>
+</package>
