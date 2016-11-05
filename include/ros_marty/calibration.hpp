@@ -47,8 +47,9 @@ class Calibration {
   char getch();
 
 // Flags
-  bool saving_;
   bool enabled_;
+  bool saving_;
+  bool exiting_;
   bool calibrated_;
   char c_;
 

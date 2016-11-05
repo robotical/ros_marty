@@ -29,19 +29,17 @@ void MartyCore::loadParams() {
     exit(0);
   }
   for (int id = 0; id < NUMJOINTS; ++id) {
-    std::string zero_p = JOINT_NAMES[id] + "/zero";
-    std::string max_p = JOINT_NAMES[id] + "/max";
-    std::string min_p = JOINT_NAMES[id] + "/min";
-    std::string dir_p = JOINT_NAMES[id] + "/dir";
-    std::string mult_p = JOINT_NAMES[id] + "/mult";
+    std::string zero_p = NAMES[id] + "/zero";
+    std::string max_p = NAMES[id] + "/max";
+    std::string min_p = NAMES[id] + "/min";
+    std::string dir_p = NAMES[id] + "/dir";
+    std::string mult_p = NAMES[id] + "/mult";
     nh_.getParam(zero_p, joint_[id].cmdZero);
     nh_.getParam(max_p, joint_[id].cmdMax);
     nh_.getParam(min_p, joint_[id].cmdMin);
     nh_.getParam(dir_p, joint_[id].cmdDir);
     nh_.getParam(mult_p, joint_[id].cmdMult);
   }
-  // ROS_WARN_STREAM("EYESWIDE: " << EYESWIDE << " EYESNORMAL: " << EYESNORMAL <<
-  // std::endl);
 
   marty_msgs::ServoMsg joint;
   for (int id = 0; id < NUMJOINTS; ++id) {

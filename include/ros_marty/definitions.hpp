@@ -38,7 +38,7 @@ enum JOINTS {
   NUMJOINTS // Number of Joints, Leave at the end!
 };
 
-const std::vector <std::string> JOINT_NAMES = {
+const std::vector <std::string> NAMES = {
   "RHIP",
   "RTWIST",
   "RKNEE",
@@ -52,18 +52,46 @@ const std::vector <std::string> JOINT_NAMES = {
   "AUX2"
 };
 
-const std::map<std::string, int> NAMES = {
-  {"RHIP", RHIP},
-  {"RTWIST", RTWIST},
-  {"RKNEE", RKNEE},
-  {"LHIP", LHIP},
-  {"LTWIST", LTWIST},
-  {"LKNEE", LKNEE},
-  {"EYES", EYES},
-  {"RARM", RARM},
-  {"LARM", LARM},
-  {"AUX1", AUX1},
-  {"AUX2", AUX2}
+const std::vector <int> JOINT_DIR = {
+  1,  //   "RHIP",
+  1,  //   "RTWIST",
+  -1,  //   "RKNEE",
+  1,  //   "LHIP",
+  1,  //   "LTWIST",
+  -1,  //   "LKNEE",
+  1,  //   "EYES",
+  -1,  //   "RARM",
+  1,  //   "LARM",
+  1,  //   "AUX1",
+  1   //   "AUX2"
+};
+
+const std::vector <int> JOINT_MULT = {
+  1,  //   "RHIP",
+  1,  //   "RTWIST",
+  1,  //   "RKNEE",
+  1,  //   "LHIP",
+  1,  //   "LTWIST",
+  1,  //   "LKNEE",
+  1,  //   "EYES",
+  1,  //   "RARM",
+  1,  //   "LARM",
+  1,  //   "AUX1",
+  1   //   "AUX2"
+};
+
+const std::map<int, std::string> JOINT_NAMES = {
+  {RHIP, "RHIP"},
+  {RTWIST, "RTWIST"},
+  {RKNEE, "RKNEE"},
+  {LHIP, "LHIP"},
+  {LTWIST, "LTWIST"},
+  {LKNEE, "LKNEE"},
+  {EYES, "EYES"},
+  {RARM, "RARM"},
+  {LARM, "LARM"},
+  {AUX1, "AUX1"},
+  {AUX2, "AUX2"}
 };
 
 # define HIPOFFSET 100
