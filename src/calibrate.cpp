@@ -14,8 +14,6 @@
 int main(int argc, char** argv) {
   ros::init(argc, argv, "calibration");
   ros::NodeHandle nh("~");
-
-  Calibration calibration(nh);
   ros::Rate r(50);
 
   bool launched(false);
@@ -23,6 +21,7 @@ int main(int argc, char** argv) {
   if (!launched) {
     ROS_ERROR("Please use 'roslaunch ros_marty calibration.launch' to calibrate\n");
   } else {
+    Calibration calibration(nh);
     while (ros::ok()) {
       calibration.calibrate();
       ros::spinOnce();

@@ -12,33 +12,34 @@ MartyCore::MartyCore(ros::NodeHandle& nh) : nh_(nh) {
   this->loadParams();
   this->init();
   this->rosSetup();
-
+  usleep(500000); //  Wait for robot initialisation
   ROS_INFO("MartyCore Ready!");
 }
 
 MartyCore::~MartyCore() {
-  nh_.deleteParam("marty_core");
+  ros::param::del("/marty");
 }
 
 void MartyCore::loadParams() {
-  nh_.param("calibrated", calibrated_, false);
+  ros::param::param("/marty/calibrated", calibrated_, false);
   if (!calibrated_) {
     ERR("Marty has not been calibrated before!\n");
     WARN("Please use 'roslaunch ros_marty calibration.launch' to calibrate\n");
+    ros::param::del("/marty");
     ros::shutdown();
     exit(0);
   }
   for (int id = 0; id < NUMJOINTS; ++id) {
-    std::string zero_p = NAMES[id] + "/zero";
-    std::string max_p = NAMES[id] + "/max";
-    std::string min_p = NAMES[id] + "/min";
-    std::string dir_p = NAMES[id] + "/dir";
-    std::string mult_p = NAMES[id] + "/mult";
-    nh_.getParam(zero_p, joint_[id].cmdZero);
-    nh_.getParam(max_p, joint_[id].cmdMax);
-    nh_.getParam(min_p, joint_[id].cmdMin);
-    nh_.getParam(dir_p, joint_[id].cmdDir);
-    nh_.getParam(mult_p, joint_[id].cmdMult);
+    std::string zero_p = "/marty/" + NAMES[id] + "/zero";
+    std::string max_p = "/marty/" + NAMES[id] + "/max";
+    std::string min_p = "/marty/" + NAMES[id] + "/min";
+    std::string dir_p = "/marty/" + NAMES[id] + "/dir";
+    std::string mult_p = "/marty/" + NAMES[id] + "/mult";
+    ros::param::get(zero_p, joint_[id].cmdZero);
+    ros::param::get(max_p, joint_[id].cmdMax);
+    ros::param::get(min_p, joint_[id].cmdMin);
+    ros::param::get(dir_p, joint_[id].cmdDir);
+    ros::param::get(mult_p, joint_[id].cmdMult);
   }
 
   marty_msgs::ServoMsg joint;

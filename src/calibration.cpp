@@ -17,11 +17,11 @@ Calibration::Calibration(ros::NodeHandle& nh) : nh_(nh) {
 }
 
 Calibration::~Calibration() {
-  ros::param::del("calibrate");
+  ros::param::del("/marty");
 }
 
 void Calibration::loadParams() {
-  nh_.param("calibrated", calibrated_, false);
+  nh_.param("/marty/calibrated", calibrated_, false);
   if (!calibrated_) {
     WARN("Marty has not been calibrated before!" << std::endl);
   }
@@ -36,9 +36,10 @@ void Calibration::init() {
     joint.servo_id = id;
     joints_.servo_msg.push_back(joint);
   }
-  int v;
   for (int id = 0; id < NUMJOINTS; ++id) {
-    nh_.param(NAMES[id] + "/zero", v, 0); joints_.servo_msg[id].servo_cmd = v;
+    int val;
+    nh_.param("/marty/" + NAMES[id] + "/zero", val, 0);
+    joints_.servo_msg[id].servo_cmd = val;
   }
 }
 
@@ -136,7 +137,10 @@ void Calibration::calibrate() {
 void Calibration::writeCalVals() {
   std::string path = ros::package::getPath("ros_marty");
   std::ofstream of (path + "/cfg/joint_calib.cfg");
-  of << "calibrated: true\n" << std::endl;
+  of << "# ****************************************************************************\n"
+     << "# **WARNING: DO NOT CHANGE ANYTHING BELOW UNLESS YOU KNOW WHAT YOU'RE DOING!**\n"
+     << "# ****************************************************************************\n";
+  of << "calibrated: true\n\n";
   for (int id = 0; id < NUMJOINTS; ++id) {
     std::string name = NAMES[id];
     int off(0);

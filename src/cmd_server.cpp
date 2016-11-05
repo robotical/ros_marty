@@ -60,7 +60,7 @@ using namespace std;
 int runCommand(MartyCore& robot, vector<uint8_t> data) {
   ROS_WARN("RUNNING COMMAND");
   int nbytes = data.size();
-  printf("packet size: %d\n", nbytes);
+  ROS_DEBUG("packet size: %d\n", nbytes);
   uint8_t cmd = data[0];
 
   data_t tSetpoints, tInterp;
@@ -268,7 +268,7 @@ int runCommand(MartyCore& robot, vector<uint8_t> data) {
     // then adjust knee angle only to get foot to floor
     // This function will never change the sign of the knee angle
 
-    printf("lower leg command\n");
+    ROS_INFO("lower leg command\n");
 
     float movetime = DEFAULT_MOVETIME;
     if (data.size() >= 2) movetime = (float)data[1] / 10;
@@ -276,8 +276,8 @@ int runCommand(MartyCore& robot, vector<uint8_t> data) {
     // Save initial position to setpoints
     tSetpoints.push_back(tline);
 
-    printf("angles: rknee: %.2f\tlknee: %.2f\n", robot.jangles_[RKNEE],
-           robot.jangles_[LKNEE]);
+    ROS_DEBUG("angles: rknee: %.2f\tlknee: %.2f\n", robot.jangles_[RKNEE],
+              robot.jangles_[LKNEE]);
     if (abs(robot.jangles_[RKNEE]) > abs(robot.jangles_[LKNEE])) {
       // Right knee is higher than left knee
       if (robot.jangles_[RKNEE] < 0) {
@@ -324,103 +324,89 @@ int runCommand(MartyCore& robot, vector<uint8_t> data) {
 
 
 int main(int argc, char** argv) {
-  // Start robot-y stuff
   ros::init(argc, argv, "cmd_server");
   ros::NodeHandle nh("~");
 
-  MartyCore robot(nh);
-  ros::Publisher enable_pub_ = nh.advertise<std_msgs::Bool>("/enable_motors", 10);
-  std_msgs::Bool enabled;
-  enabled.data = true;
-  enable_pub_.publish(enabled);
-  ros::spinOnce();
-  ROS_INFO("HELLO");
-  // Little "Hello" from the robot
-  data_t tSetpoints, tInterp;
-  deque <float> tline(NUMJOINTS + 1, 0);
-  tSetpoints.push_back(tline);
-  setPointsLeanLeft(tSetpoints, 30, 0, 1.0);
-  setPointsLeanRight(tSetpoints, 30, 0, 2.0);
-  setPointsLegsZero(tSetpoints, 1.0);
-  interpTrajectory(tSetpoints, tInterp, 0.05);
-  runTrajectory(robot, tInterp);
+  bool launched(false);
+  nh.getParam("launched", launched);
+  if (!launched) {
+    ROS_ERROR("Please use 'roslaunch ros_marty marty.launch'\n");
+  } else {
+    MartyCore robot(nh);
+    robot.enableRobot();
 
-  robot.setServo(EYES, EYESWIDE);
-  sleep(1.0);
-  robot.setServo(EYES, EYESNORMAL);
+    // Little "Hello" from the robot
+    data_t tSetpoints, tInterp;
+    deque <float> tline(NUMJOINTS + 1, 0);
+    tSetpoints.push_back(tline);
+    setPointsLeanLeft(tSetpoints, 30, 0, 1.0);
+    setPointsLeanRight(tSetpoints, 30, 0, 2.0);
+    setPointsLegsZero(tSetpoints, 1.0);
+    interpTrajectory(tSetpoints, tInterp, 0.05);
+    runTrajectory(robot, tInterp);
 
-  // Networking setup
-  struct sockaddr_in servaddr, clientaddr;
-  socklen_t clilen;
-  int port = PORT, sock, clisock;
-  int nbytes;
-  char buffer[256];
+    robot.setServo(EYES, EYESWIDE);
+    sleep(1.0);
+    robot.setServo(EYES, EYESNORMAL);
 
-  // Create socket, initialise and listen
-  if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-    printf("cannot create socket");
-    return 0;
-  }
-  int yes = 1;
-  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+    // Networking setup
+    struct sockaddr_in servaddr, clientaddr;
+    socklen_t clilen;
+    int port = PORT, sock, clisock;
+    int nbytes;
+    char buffer[256];
 
-  memset((char*)&servaddr, 0, sizeof(servaddr));
-  servaddr.sin_family = AF_INET;
-  servaddr.sin_addr.s_addr = INADDR_ANY;
-  servaddr.sin_port = htons(port);
-  if (bind(sock, (struct sockaddr*) &servaddr, sizeof(servaddr)) < 0)
-    printf("ERROR on binding");
-  listen(sock, 5);
-
-  ros::Rate r(1);
-  while (ros::ok()) {
-
-    printf("Socket initialised on port: %d. Waiting for incoming connection\n",
-           port);
-    enabled.data = false;
-    enable_pub_.publish(enabled);
-    // Accept incoming connection
-    clilen = sizeof(clientaddr);
-    ros::spinOnce();
-    clisock = accept(sock, (struct sockaddr*) &clientaddr, &clilen);
-    if (clisock < 0)
-      printf("ERROR on accept");
-    // Set the client port to nonblocking, to allow the main loop
-    // to run without pausing for incoming data
-    // We assume that there is only one server running,
-    // and just one client connected at any given time
-    // fcntl(clisock, F_SETFL, O_NONBLOCK);
-
-    printf("Incoming connection accepted...\n");
-    // int error = 0;
-    // socklen_t len = sizeof (error);
-    // int retval;
-    // while ((retval = getsockopt (clisock, SOL_SOCKET, SO_ERROR, &error, &len ))==0){
-    nbytes = read(clisock, buffer, 256);
-
-    if (nbytes > 0) {
-      printf("Data received: %d", buffer[0]);
-      vector<uint8_t> dbytes;
-      dbytes.push_back(buffer[0]);
-      for (int i = 1; i < nbytes; i++) {
-        printf("\t%d", buffer[i]);
-        dbytes.push_back(buffer[i]);
-      }
-      printf("\n");
-      enabled.data = true;
-      enable_pub_.publish(enabled);
-      runCommand(robot, dbytes);
-      // runCommand(robot, (uint8_t) buffer[0]);
-
+    // Create socket, initialise and listen
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+      ROS_ERROR("cannot create socket");
+      return 0;
     }
-    //}
-    printf("Closing connection\n");
-    close(clisock);
-    ros::spinOnce();
-    r.sleep();
-  }
+    int yes = 1;
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
-  ros::param::del("cmd_server");
+    memset((char*)&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = INADDR_ANY;
+    servaddr.sin_port = htons(port);
+    if (bind(sock, (struct sockaddr*) &servaddr, sizeof(servaddr)) < 0)
+    { ROS_ERROR("ERROR on binding"); }
+    listen(sock, 5);
+
+    ros::Rate r(50);
+    while (ros::ok()) {
+
+      ROS_INFO("Socket initialised on port: %d. Waiting for incoming connection\n",
+               port);
+      robot.stopRobot();
+      // Accept incoming connection
+      clilen = sizeof(clientaddr);
+      ros::spinOnce();
+      clisock = accept(sock, (struct sockaddr*) &clientaddr, &clilen);
+      if (clisock < 0) { ROS_ERROR("ERROR on accept");}
+
+      ROS_INFO("Incoming connection accepted...\n");
+      nbytes = read(clisock, buffer, 256);
+
+      if (nbytes > 0) {
+        ROS_DEBUG("Data received: %d", buffer[0]);
+        vector<uint8_t> dbytes;
+        dbytes.push_back(buffer[0]);
+        for (int i = 1; i < nbytes; i++) {
+          ROS_DEBUG("\t%d", buffer[i]);
+          dbytes.push_back(buffer[i]);
+        }
+        ROS_DEBUG("\n");
+        robot.enableRobot();
+        runCommand(robot, dbytes);
+
+      }
+      ROS_INFO("Closing connection\n");
+      close(clisock);
+      ros::spinOnce();
+      r.sleep();
+    }
+  }
+  ros::param::del("/marty");
   ros::shutdown();
   return 0;
 }
