@@ -77,7 +77,8 @@ int MartyCore::jointPosToServoCmd(float pos, int zero, float mult,
 }
 
 void MartyCore::setServoJointPos(std::string name, int pos) {
-  // servo_msg_.servo_id = ;
+  try {servo_msg_.servo_id = JOINT_NAMES.at(name);}
+  catch (const std::exception& e) {std::cerr << e.what();};
   servo_msg_.servo_cmd = pos;
   servo_pub_.publish(servo_msg_);
 }

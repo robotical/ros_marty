@@ -345,9 +345,9 @@ int main(int argc, char** argv) {
     interpTrajectory(tSetpoints, tInterp, 0.05);
     runTrajectory(robot, tInterp);
 
-    robot.setServo(EYES, EYESWIDE);
+    robot.setServoPos(EYES, EYESEXCITED);
     sleep(1.0);
-    robot.setServo(EYES, EYESNORMAL);
+    robot.setServoPos(EYES, EYESNORMAL);
 
     // Networking setup
     struct sockaddr_in servaddr, clientaddr;

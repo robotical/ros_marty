@@ -80,18 +80,18 @@ const std::vector <int> JOINT_MULT = {
   1   //   "AUX2"
 };
 
-const std::map<int, std::string> JOINT_NAMES = {
-  {RHIP, "RHIP"},
-  {RTWIST, "RTWIST"},
-  {RKNEE, "RKNEE"},
-  {LHIP, "LHIP"},
-  {LTWIST, "LTWIST"},
-  {LKNEE, "LKNEE"},
-  {EYES, "EYES"},
-  {RARM, "RARM"},
-  {LARM, "LARM"},
-  {AUX1, "AUX1"},
-  {AUX2, "AUX2"}
+const std::map<std::string, int> JOINT_NAMES = {
+  {"RHIP", RHIP},
+  {"RTWIST", RTWIST},
+  {"RKNEE", RKNEE},
+  {"LHIP", LHIP},
+  {"LTWIST", LTWIST},
+  {"LKNEE", LKNEE},
+  {"EYES", EYES},
+  {"RARM", RARM},
+  {"LARM", LARM},
+  {"AUX1", AUX1},
+  {"AUX2", AUX2}
 };
 
 # define HIPOFFSET 100
@@ -101,44 +101,9 @@ const std::map<int, std::string> JOINT_NAMES = {
 # define EYESOFFSET 100
 # define AUXOFFSET 110
 
-// Servo polarity and multiplier
-// #define RHIPDIR   1
-// #define RHIPMULT  0.5
-
-// #define RTWISTDIR   1
-// #define RTWISTMULT  0.5
-
-// #define RKNEEDIR  -1
-// #define RKNEEMULT 1
-
-// #define LHIPDIR   1
-// #define LHIPMULT  0.5
-
-// #define LTWISTDIR   1
-// #define LTWISTMULT  0.5
-
-// #define LKNEEDIR  -1
-// #define LKNEEMULT 0.5
-
-// #define LARMDIR   1
-// #define LARMMULT    0.5
-
-// #define RARMDIR   -1
-// #define RARMMULT    0.5
-
-// #define AUX1DIR   1
-// #define AUX1MULT  0.5
-
-// #define EYESDIR   1
-// #define EYESMULT  0.5
-
-// #define AUX2DIR   1
-// #define AUX2MULT  0.5
-
-// These are "angles" rather than servo commands
-#define EYESNORMAL  0
-#define EYESANGRY   22
-#define EYESEXCITED -20
-#define EYESWIDE  -50
+#define EYESANGRY   100
+#define EYESNORMAL  70
+#define EYESEXCITED 20
+#define EYESWIDE  -100
 
 #endif  /* MARTY_DEFINITIONS_HPP */
