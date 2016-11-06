@@ -70,9 +70,11 @@ class MartyCore {
 
   // Parameters
   bool calibrated_;
+  double acc_thr_;
 
   // Variables
   marty_msgs::Accelerometer accel_msg_;
+
 
   // ROS
   std_msgs::Bool enable_robot_;

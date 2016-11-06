@@ -42,6 +42,8 @@ void MartyCore::loadParams() {
     ros::param::get(mult_p, joint_[id].cmdMult);
   }
 
+  ros::param::param("/marty/fall_threshold", acc_thr_, -0.9);
+
   marty_msgs::ServoMsg joint;
   for (int id = 0; id < NUMJOINTS; ++id) {
     joint.servo_id = id;
@@ -71,13 +73,13 @@ void MartyCore::rosSetup() {
 
 void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
   accel_msg_ = *msg;
-  if ((accel_msg_.y > -0.9) && (falling_ == false)) {
+  if ((accel_msg_.y > acc_thr_) && (falling_ == false)) {
     ROS_WARN_STREAM("Robot Falling! " << accel_msg_.y << std::endl);
     falling_ = true;
     enable_robot_.data = false;
     enable_pub_.publish(enable_robot_);
   }
-  if ((accel_msg_.y < -0.9) && (falling_ == true)) {
+  if ((accel_msg_.y < acc_thr_) && (falling_ == true)) {
     ROS_WARN_STREAM("Robot Stable! " << accel_msg_.y << std::endl);
     falling_ = false;
     enable_robot_.data = true;
