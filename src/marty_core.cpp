@@ -68,7 +68,7 @@ void MartyCore::rosSetup() {
   servo_array_pub_ = nh_.advertise<marty_msgs::ServoMsgArray>("/servo_array", 10);
   // SUBSCRIBERS
   accel_sub_ = nh_.subscribe("/accel", 1000, &MartyCore::accelCB, this);
-  batt_sub_ = nh_.subscribe("/accel", 1000, &MartyCore::battCB, this);
+  batt_sub_ = nh_.subscribe("/battery", 1000, &MartyCore::battCB, this);
   // SERVICES
   check_fall_srv_ = nh_.advertiseService("/marty/check_fall",
                                          &MartyCore::setFallDetector, this);
