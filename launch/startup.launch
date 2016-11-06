@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
 <launch>
-  <node name="serial_node" pkg="rosserial_python" type="serial_node" output="screen" clear_params="true" />
+  <node name="serial_node" pkg="rosserial_python" type="serial_node.py" output="screen" clear_params="true" />
   <include file="$(find ros_marty)/launch/marty.launch"/>
 </launch>
