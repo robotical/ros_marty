@@ -12,6 +12,7 @@
 #ifndef MARTY_DEFINITIONS_HPP
 #define MARTY_DEFINITIONS_HPP
 
+#include <unistd.h>
 #include <map>
 
 #define DEBUG_MODE false
@@ -22,6 +23,8 @@
 #define INFO(x) std::cerr << "\033[22;37;1m" << x << "\033[0m";   // WHITE
 #define DEBUG(x) std::cerr << "\033[22;34;1m" << x << "\033[0m";  // BLUE
 #define CLEAR() std::cerr << "\x1B[2J\x1B[H"; // Clear Console
+
+inline void sleepms(int ms) {usleep(ms * 1000);}
 
 enum JOINTS {
   RHIP = 0,

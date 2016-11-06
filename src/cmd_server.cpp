@@ -396,8 +396,13 @@ int main(int argc, char** argv) {
           dbytes.push_back(buffer[i]);
         }
         ROS_DEBUG("\n");
-        robot.enableRobot();
-        runCommand(robot, dbytes);
+        ros::spinOnce();
+        if (robot.hasFallen()) {
+          ROS_WARN("Marty has fallen over! Please pick him up and try again.");
+        } else {
+          robot.enableRobot();
+          runCommand(robot, dbytes);
+        }
 
       }
       ROS_INFO("Closing connection\n");

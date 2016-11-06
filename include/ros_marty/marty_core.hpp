@@ -19,6 +19,7 @@
 #include <std_msgs/Bool.h>
 #include <marty_msgs/ServoMsg.h>
 #include <marty_msgs/ServoMsgArray.h>
+#include <marty_msgs/Accelerometer.h>
 
 // MARTY
 #include <ros_marty/definitions.hpp>
@@ -45,7 +46,6 @@ class MartyCore {
  public:
   MartyCore(ros::NodeHandle& nh);
   ~MartyCore();
-  std::deque<float> jangles_;
   int jointPosToServoCmd(float pos, int zero, float mult,
                          int dir, int max, int min);
   void setServoJointPos(std::string name, int pos);
@@ -55,26 +55,34 @@ class MartyCore {
   void stopRobot();
   bool setServo(int joint, float angle);
   void setServos(std::deque <float> angles);
-// Variables
+  bool hasFallen() {return falling_;}
+
+  // Public Variables
   robotJoint joint_[NUMJOINTS];
   int numjoints_;
+  std::deque<float> jangles_;
 
  private:
+  void accelCB(const marty_msgs::Accelerometer::ConstPtr& msg);
 
-// Flags
+  // Flags
+  bool falling_;
 
-// Parameters
+  // Parameters
   bool calibrated_;
 
+  // Variables
+  marty_msgs::Accelerometer accel_msg_;
 
-// ROS
+  // ROS
   std_msgs::Bool enable_robot_;
   marty_msgs::ServoMsg servo_msg_;
   marty_msgs::ServoMsgArray servo_msg_array_;
 
-  ros::Publisher enable_pub_;
-  ros::Publisher servo_pub_;
-  ros::Publisher servo_array_pub_;
+  ros::Publisher  enable_pub_;
+  ros::Publisher  servo_pub_;
+  ros::Publisher  servo_array_pub_;
+  ros::Subscriber accel_sub_;
 
 };
 

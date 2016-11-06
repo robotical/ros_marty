@@ -12,7 +12,7 @@ MartyCore::MartyCore(ros::NodeHandle& nh) : nh_(nh) {
   this->loadParams();
   this->init();
   this->rosSetup();
-  usleep(500000); //  Wait for robot initialisation
+  sleepms(500); //  Wait for robot initialisation
   ROS_INFO("MartyCore Ready!");
 }
 
@@ -52,14 +52,38 @@ void MartyCore::loadParams() {
 }
 
 void MartyCore::init() {
+  falling_ = false;
   numjoints_ = NUMJOINTS;
-  for (int ji = 0; ji < NUMJOINTS; ji++) jangles_.push_back(0);
+  for (int ji = 0; ji < NUMJOINTS; ji++) { jangles_.push_back(0); }
 }
 
 void MartyCore::rosSetup() {
+  // TODO: WAIT UNTIL ROSSERIAL HAS INITIALISED PROPERLY
   enable_pub_ = nh_.advertise<std_msgs::Bool>("/enable_motors", 10);
+  while (enable_pub_.getNumSubscribers() == 0) {
+    ROS_INFO("Waiting for rosserial to start...\n");
+    sleepms(500);
+  }
   servo_pub_ = nh_.advertise<marty_msgs::ServoMsg>("/servo", 10);
   servo_array_pub_ = nh_.advertise<marty_msgs::ServoMsgArray>("/servo_array", 10);
+  accel_sub_ = nh_.subscribe("/accel", 1000, &MartyCore::accelCB, this);
+}
+
+void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
+  accel_msg_ = *msg;
+  if ((accel_msg_.y > -0.9) && (falling_ == false)) {
+    ROS_WARN_STREAM("Robot Falling! " << accel_msg_.y << std::endl);
+    falling_ = true;
+    enable_robot_.data = false;
+    enable_pub_.publish(enable_robot_);
+  }
+  if ((accel_msg_.y < -0.9) && (falling_ == true)) {
+    ROS_WARN_STREAM("Robot Stable! " << accel_msg_.y << std::endl);
+    falling_ = false;
+    enable_robot_.data = true;
+    enable_pub_.publish(enable_robot_);
+  }
+  ros::spinOnce();
 }
 
 int MartyCore::jointPosToServoCmd(float pos, int zero, float mult,
@@ -137,7 +161,7 @@ void MartyCore::setServos(std::deque <float> angles) {
     ji++;
   }
   servo_array_pub_.publish(servo_msg_array_);
-  // ros::spinOnce();
+  ros::spinOnce();
 }
 
 // void MartyCore::printAngles() {
