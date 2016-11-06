@@ -68,13 +68,12 @@ int runCommand(MartyCore& robot, vector<uint8_t> data) {
   tline.push_front(0);
   switch (cmd) {
   case CMD_HELLO:
-    // This function doesn't take any arguments, it just
-    // makes the robot move a little and then ensures it's at the zero pos
-    // tInterp = genReturnToZero(robot, 1.5);
-    // runTrajectory(robot, tInterp);
-    robot.setServo(EYES, EYESWIDE);
-    sleep(1.0);
-    robot.setServo(EYES, EYESNORMAL);
+    tInterp = genReturnToZero(robot, 1.5);
+    runTrajectory(robot, tInterp);
+    robot.setServoPos(EYES, EYESWIDE);
+    sleepms(1000);
+    robot.setServoPos(EYES, EYESNORMAL);
+    sleepms(250);
     break;
 
   case CMD_MOVEKNEE: {
@@ -252,7 +251,6 @@ int runCommand(MartyCore& robot, vector<uint8_t> data) {
       tline[1 + RKNEE] = tline[1 + LKNEE] - angle;
     }
 
-
     tline[0] = movetime;
     tSetpoints.push_back(tline);
 
@@ -345,9 +343,11 @@ int main(int argc, char** argv) {
     interpTrajectory(tSetpoints, tInterp, 0.05);
     runTrajectory(robot, tInterp);
 
-    robot.setServoPos(EYES, EYESEXCITED);
-    sleep(1.0);
+    sleepms(250);
+    robot.setServoPos(EYES, EYESANGRY);
+    sleepms(250);
     robot.setServoPos(EYES, EYESNORMAL);
+    sleepms(500);
 
     // Networking setup
     struct sockaddr_in servaddr, clientaddr;

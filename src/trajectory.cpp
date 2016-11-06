@@ -66,14 +66,10 @@ bool runTrajectory(MartyCore& robot, data_t& traj) {
   data_t::record_iterator ri = traj.begin();
   while (ri != traj.end()) {
     if (gettime() - startTime > (*ri)[0]) {
-      // if (DEBUG_MODE) {
-      //   printf("specified=%2.4f,\tactual=%2.4f\t", (*ri)[0], gettime() - startTime);
-      // }
       deque<float> thisline = *ri;
       thisline.pop_front();   // get rid of time from angles
       robot.setServos(thisline);
       ri++;
-      // robot.printAngles();
     }
   }
   return true;

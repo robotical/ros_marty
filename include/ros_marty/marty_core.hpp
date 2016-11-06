@@ -17,6 +17,7 @@
 
 // Messages
 #include <std_msgs/Bool.h>
+#include <std_msgs/Float32.h>
 #include <std_srvs/SetBool.h>
 #include <marty_msgs/ServoMsg.h>
 #include <marty_msgs/ServoMsgArray.h>
@@ -47,24 +48,23 @@ class MartyCore {
  public:
   MartyCore(ros::NodeHandle& nh);
   ~MartyCore();
-  int jointPosToServoCmd(float pos, int zero, float mult,
-                         int dir, int max, int min);
+  int jointPosToServoCmd(int id, float pos);
   void setServoJointPos(std::string name, int pos);
   void setServoPos(int channel, int pos);
   // bool stopServo(uint8_t jointIndex);
   void enableRobot();
   void stopRobot();
-  bool setServo(int joint, float angle);
+  bool setServo(int id, float angle);
   void setServos(std::deque <float> angles);
   bool hasFallen() {return falling_;}
 
   // Public Variables
   robotJoint joint_[NUMJOINTS];
-  int numjoints_;
   std::deque<float> jangles_;
 
  private:
   void accelCB(const marty_msgs::Accelerometer::ConstPtr& msg);
+  void battCB(const std_msgs::Float32::ConstPtr& msg);
 
   bool setFallDetector(std_srvs::SetBool::Request&  req,
                        std_srvs::SetBool::Response& res);
@@ -79,6 +79,7 @@ class MartyCore {
 
   // Variables
   marty_msgs::Accelerometer accel_msg_;
+  float battery_val_;
 
   // ROS
   std_msgs::Bool enable_robot_;
@@ -89,6 +90,7 @@ class MartyCore {
   ros::Publisher  servo_pub_;
   ros::Publisher  servo_array_pub_;
   ros::Subscriber accel_sub_;
+  ros::Subscriber batt_sub_;
   ros::ServiceServer check_fall_srv_;
 
 };
