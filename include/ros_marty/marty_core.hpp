@@ -17,6 +17,7 @@
 
 // Messages
 #include <std_msgs/Bool.h>
+#include <std_srvs/SetBool.h>
 #include <marty_msgs/ServoMsg.h>
 #include <marty_msgs/ServoMsgArray.h>
 #include <marty_msgs/Accelerometer.h>
@@ -65,16 +66,19 @@ class MartyCore {
  private:
   void accelCB(const marty_msgs::Accelerometer::ConstPtr& msg);
 
+  bool setFallDetector(std_srvs::SetBool::Request&  req,
+                       std_srvs::SetBool::Response& res);
+
   // Flags
   bool falling_;
 
   // Parameters
   bool calibrated_;
+  bool check_fall_;
   double acc_thr_;
 
   // Variables
   marty_msgs::Accelerometer accel_msg_;
-
 
   // ROS
   std_msgs::Bool enable_robot_;
@@ -85,6 +89,7 @@ class MartyCore {
   ros::Publisher  servo_pub_;
   ros::Publisher  servo_array_pub_;
   ros::Subscriber accel_sub_;
+  ros::ServiceServer check_fall_srv_;
 
 };
 
