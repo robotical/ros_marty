@@ -41,7 +41,7 @@ void MartyCore::loadParams() {
     ros::param::get(mult_p, joint_[id].cmdMult);
   }
 
-  ros::param::param("/marty/check_fall", check_fall_, true);
+  ros::param::param("/marty/check_fall", fall_disable_, true);
   ros::param::param("/marty/fall_threshold", acc_thr_, -0.9);
 
   marty_msgs::ServoMsg joint;
@@ -53,7 +53,7 @@ void MartyCore::loadParams() {
 }
 
 void MartyCore::init() {
-  falling_ = false;
+  falling_.data = false;
   for (int ji = 0; ji < NUMJOINTS; ji++) { jangles_.push_back(0); }
 }
 
@@ -64,36 +64,41 @@ void MartyCore::rosSetup() {
     ROS_INFO("Waiting for rosserial to start...\n");
     sleepms(500);
   }
+  falling_pub_ = nh_.advertise<std_msgs::Bool>("/falling", 10);
   servo_pub_ = nh_.advertise<marty_msgs::ServoMsg>("/servo", 10);
   servo_array_pub_ = nh_.advertise<marty_msgs::ServoMsgArray>("/servo_array", 10);
   // SUBSCRIBERS
   accel_sub_ = nh_.subscribe("/accel", 1000, &MartyCore::accelCB, this);
   batt_sub_ = nh_.subscribe("/battery", 1000, &MartyCore::battCB, this);
   // SERVICES
-  check_fall_srv_ = nh_.advertiseService("/marty/check_fall",
-                                         &MartyCore::setFallDetector, this);
+  fall_dis_srv_ = nh_.advertiseService("/marty/fall_disable",
+                                       &MartyCore::setFallDetector, this);
 }
 
 bool MartyCore::setFallDetector(std_srvs::SetBool::Request&  req,
                                 std_srvs::SetBool::Response& res) {
-  check_fall_ = req.data; res.success = true; return true;
+  fall_disable_ = req.data; res.success = true; return true;
 }
 
 void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
-  accel_msg_ = *msg;
-  if (check_fall_) {
-    if ((accel_msg_.y > acc_thr_) && (falling_ == false)) {
-      ROS_WARN_STREAM("Robot Falling! " << accel_msg_.y << std::endl);
-      falling_ = true;
+  accel_ = *msg;
+  if ((accel_.y > acc_thr_) && (falling_.data == false)) {
+    ROS_WARN_STREAM("Robot Falling! " << accel_.y << std::endl);
+    falling_.data = true;
+    if (fall_disable_) {
       enable_robot_.data = false;
       enable_pub_.publish(enable_robot_);
     }
-    if ((accel_msg_.y < acc_thr_) && (falling_ == true)) {
-      ROS_WARN_STREAM("Robot Stable! " << accel_msg_.y << std::endl);
-      falling_ = false;
+    falling_pub_.publish(falling_);
+  }
+  if ((accel_.y < acc_thr_) && (falling_.data == true)) {
+    ROS_WARN_STREAM("Robot Stable! " << accel_.y << std::endl);
+    falling_.data = false;
+    if (fall_disable_) {
       enable_robot_.data = true;
       enable_pub_.publish(enable_robot_);
     }
+    falling_pub_.publish(falling_);
   }
   ros::spinOnce();
 }

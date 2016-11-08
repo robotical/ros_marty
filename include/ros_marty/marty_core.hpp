@@ -56,7 +56,9 @@ class MartyCore {
   void stopRobot();
   bool setServo(int id, float angle);
   void setServos(std::deque <float> angles);
-  bool hasFallen() {return falling_;}
+
+  // Getters/Setters
+  bool hasFallen() {return falling_.data;}
 
   // Public Variables
   robotJoint joint_[NUMJOINTS];
@@ -70,15 +72,15 @@ class MartyCore {
                        std_srvs::SetBool::Response& res);
 
   // Flags
-  bool falling_;
 
   // Parameters
   bool calibrated_;
-  bool check_fall_;
+  bool fall_disable_;
   double acc_thr_;
 
   // Variables
-  marty_msgs::Accelerometer accel_msg_;
+  marty_msgs::Accelerometer accel_;
+  std_msgs::Bool falling_;
   float battery_val_;
 
   // ROS
@@ -87,11 +89,12 @@ class MartyCore {
   marty_msgs::ServoMsgArray servo_msg_array_;
 
   ros::Publisher  enable_pub_;
+  ros::Publisher  falling_pub_;
   ros::Publisher  servo_pub_;
   ros::Publisher  servo_array_pub_;
   ros::Subscriber accel_sub_;
   ros::Subscriber batt_sub_;
-  ros::ServiceServer check_fall_srv_;
+  ros::ServiceServer fall_dis_srv_;
 
 };
 
