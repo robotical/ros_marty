@@ -352,7 +352,7 @@ int main(int argc, char** argv) {
     // Networking setup
     struct sockaddr_in servaddr, clientaddr;
     socklen_t clilen;
-    int port = PORT, sock, clisock;
+    int port = PORT, sock, clisock, pid;
     int nbytes;
     char buffer[256];
 
@@ -372,41 +372,62 @@ int main(int argc, char** argv) {
     { ROS_ERROR("ERROR on binding"); }
     listen(sock, 5);
 
+    // set server socket to non-binding, so that accept will not hang
+    fcntl(sock, F_SETFL, O_NONBLOCK);
+    printf("Socket initialised on port: %d. Waiting for incoming connection\n", port);
+
     ros::Rate r(50);
     while (ros::ok()) {
-
-      ROS_INFO("Socket initialised on port: %d. Waiting for incoming connection\n",
-               port);
-      robot.stopRobot();
+      //robot.stopRobot();      // can no longer do this here. robot operations might be running in a thread;
       // Accept incoming connection
       clilen = sizeof(clientaddr);
       ros::spinOnce();
       clisock = accept(sock, (struct sockaddr*) &clientaddr, &clilen);
-      if (clisock < 0) { ROS_ERROR("ERROR on accept");}
+      if (clisock < 0) { 
+        //ROS_ERROR("ERROR on accept");
+        // socket set to non-blocking, and we haven't got a valid connection yet
+        continue;
+      }
 
       ROS_INFO("Incoming connection accepted...\n");
-      nbytes = read(clisock, buffer, 256);
-
-      if (nbytes > 0) {
-        ROS_DEBUG("Data received: %d", buffer[0]);
-        vector<uint8_t> dbytes;
-        dbytes.push_back(buffer[0]);
-        for (int i = 1; i < nbytes; i++) {
-          ROS_DEBUG("\t%d", buffer[i]);
-          dbytes.push_back(buffer[i]);
-        }
-        ROS_DEBUG("\n");
-        ros::spinOnce();
-        if (robot.hasFallen()) {
-          ROS_WARN("Marty has fallen over! Please pick him up and try again.");
-        } else {
-          robot.enableRobot();
-          runCommand(robot, dbytes);
-        }
-
+      pid = fork();
+    
+      if (pid < 0) {
+         ROS_ERROR("ERROR on fork");
+         exit(1);
       }
-      ROS_INFO("Closing connection\n");
-      close(clisock);
+      
+      if (pid == 0) {
+        /* This is the client process */
+        close(sock);
+
+        nbytes = read(clisock, buffer, 256);
+
+        if (nbytes > 0) {
+          ROS_DEBUG("Data received: %d", buffer[0]);
+          vector<uint8_t> dbytes;
+          dbytes.push_back(buffer[0]);
+          for (int i = 1; i < nbytes; i++) {
+            ROS_DEBUG("\t%d", buffer[i]);
+            dbytes.push_back(buffer[i]);
+          }
+          ROS_DEBUG(". Running Command\n");
+          ros::spinOnce();
+          if (robot.hasFallen()) {
+            ROS_WARN("Marty has fallen over! Please pick him up and try again.");
+          } else {
+            robot.enableRobot();
+            runCommand(robot, dbytes);
+          };
+          ROS_DEBUG("Done!\n");
+        }
+        ROS_DEBUG("Closing connection\n");
+        close(clisock);
+        exit(0);
+      } else {
+         close(clisock);
+      }
+
       ros::spinOnce();
       r.sleep();
     }
