@@ -68,7 +68,12 @@ bool runTrajectory(MartyCore& robot, data_t& traj) {
     if (gettime() - startTime > (*ri)[0]) {
       deque<float> thisline = *ri;
       thisline.pop_front();   // get rid of time from angles
-      robot.setServos(thisline);
+      std::map<int, float> angles;
+      for (int i = 0; i < NUMJOINTS; ++i) {
+        angles[i] = thisline[i];
+      }
+      // robot.setServos(thisline);
+      robot.setServos(angles);
       ri++;
     }
   }

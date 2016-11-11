@@ -15,6 +15,7 @@
 #include <vector>
 #include <time.h>
 #include <cmath>
+#include <signal.h>
 
 // #include "i2c.h"
 #include "ros_marty/marty_core.hpp"
@@ -43,7 +44,8 @@ enum Commands {
   CMD_CELEBRATE,
   CMD_HIPTOBESQUARE,
   CMD_ROLLERSKATE,
-  CMD_ARMS
+  CMD_ARMS,
+  CMD_STOP
 };
 
 #define CMD_LEFT  0
@@ -55,13 +57,11 @@ enum Commands {
 #define CMD_POSITIVE  0
 #define CMD_NEGATIVE  1
 
-using namespace std;
-
-int runCommand(MartyCore& robot, vector<uint8_t> data) {
-  ROS_WARN("RUNNING COMMAND");
+int runCommand(MartyCore& robot, vector<int> data) {
   int nbytes = data.size();
   ROS_DEBUG("packet size: %d\n", nbytes);
-  uint8_t cmd = data[0];
+  int cmd = data[0];
+  // ROS_INFO_STREAM("RunningCMD: " << int(cmd));
 
   data_t tSetpoints, tInterp;
   deque<float> tline(robot.jangles_);
@@ -309,19 +309,34 @@ int runCommand(MartyCore& robot, vector<uint8_t> data) {
   }
   case CMD_ROLLERSKATE: {
     rollerSkate(robot);
+    break;
   }
   case CMD_ARMS: {
     float angle1 = data[1];
     float angle2 = data[2];
-    robot.setServo(RARM, angle1);
-    robot.setServo(LARM, angle2);
+    std::map<int, float> angles = {{RARM, angle1}, {LARM, angle2}};
+    robot.setServos(angles);
+    break;
+  }
+  case CMD_STOP: {
+    sleepms(100);
+    robot.stopRobot();
+    break;
   }
   }
   return 1;
 }
 
+volatile sig_atomic_t exiting = 0;
+void exit_f(int sig) {
+  ROS_WARN("EXITING!");
+  ros::param::del("/marty");
+  ros::shutdown();
+  exiting = 1;
+}
 
 int main(int argc, char** argv) {
+  signal(SIGINT, exit_f);
   ros::init(argc, argv, "cmd_server");
   ros::NodeHandle nh("~");
 
@@ -333,6 +348,7 @@ int main(int argc, char** argv) {
     MartyCore robot(nh);
     robot.enableRobot();
 
+    // TODO: robot.hello();
     // Little "Hello" from the robot
     data_t tSetpoints, tInterp;
     deque <float> tline(NUMJOINTS + 1, 0);
@@ -348,11 +364,12 @@ int main(int argc, char** argv) {
     sleepms(250);
     robot.setServoPos(EYES, EYESNORMAL);
     sleepms(500);
+    robot.stopRobot();
 
     // Networking setup
     struct sockaddr_in servaddr, clientaddr;
     socklen_t clilen;
-    int port = PORT, sock, clisock, pid;
+    int port = PORT, sock, clisock;
     int nbytes;
     char buffer[256];
 
@@ -374,63 +391,39 @@ int main(int argc, char** argv) {
 
     // set server socket to non-binding, so that accept will not hang
     fcntl(sock, F_SETFL, O_NONBLOCK);
-    printf("Socket initialised on port: %d. Waiting for incoming connection\n", port);
+    printf("Socket initialised on port: %d. Waiting for incoming connection\n",
+           port);
 
     ros::Rate r(50);
-    while (ros::ok()) {
-      //robot.stopRobot();      // can no longer do this here. robot operations might be running in a thread;
-      // Accept incoming connection
+    while (ros::ok() && !exiting) {
       clilen = sizeof(clientaddr);
-      ros::spinOnce();
       clisock = accept(sock, (struct sockaddr*) &clientaddr, &clilen);
-      if (clisock < 0) { 
-        //ROS_ERROR("ERROR on accept");
-        // socket set to non-blocking, and we haven't got a valid connection yet
-        continue;
-      }
-
-      ROS_INFO("Incoming connection accepted...\n");
-      pid = fork();
-    
-      if (pid < 0) {
-         ROS_ERROR("ERROR on fork");
-         exit(1);
-      }
-      
-      if (pid == 0) {
-        /* This is the client process */
-        close(sock);
-
+      if (clisock >= 0) {
+        robot.enableRobot();
+        ROS_DEBUG("Incoming connection accepted...\n");
         nbytes = read(clisock, buffer, 256);
-
         if (nbytes > 0) {
           ROS_DEBUG("Data received: %d", buffer[0]);
-          vector<uint8_t> dbytes;
+          vector<int> dbytes;
           dbytes.push_back(buffer[0]);
           for (int i = 1; i < nbytes; i++) {
             ROS_DEBUG("\t%d", buffer[i]);
             dbytes.push_back(buffer[i]);
           }
-          ROS_DEBUG(". Running Command\n");
-          ros::spinOnce();
+          ROS_DEBUG("Running Command\n");
           if (robot.hasFallen()) {
             ROS_WARN("Marty has fallen over! Please pick him up and try again.");
           } else {
-            robot.enableRobot();
             runCommand(robot, dbytes);
-          };
+          }
           ROS_DEBUG("Done!\n");
         }
-        ROS_DEBUG("Closing connection\n");
         close(clisock);
-        exit(0);
-      } else {
-         close(clisock);
       }
-
       ros::spinOnce();
       r.sleep();
     }
+    close(sock);
   }
   ros::param::del("/marty");
   ros::shutdown();

@@ -55,7 +55,7 @@ class MartyCore {
   void enableRobot();
   void stopRobot();
   bool setServo(int id, float angle);
-  void setServos(std::deque <float> angles);
+  void setServos(std::map<int, float> angles);
 
   // Getters/Setters
   bool hasFallen() {return falling_.data;}
@@ -86,7 +86,7 @@ class MartyCore {
   // ROS
   std_msgs::Bool enable_robot_;
   marty_msgs::ServoMsg servo_msg_;
-  marty_msgs::ServoMsgArray servo_msg_array_;
+  // marty_msgs::ServoMsgArray servo_msg_array_;
 
   ros::Publisher  enable_pub_;
   ros::Publisher  falling_pub_;

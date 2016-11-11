@@ -24,6 +24,7 @@ cmds = {
   "hiptobesquare": 13,
   "rollerskate": 14,
   "arms": 15,
+  "stop": 16,
 }
 
 encoding = {
@@ -209,3 +210,6 @@ def hipToBeSquare():
 
 def rollerSkate():
     sendCmd(cmds["rollerskate"], [])
+
+def stop():
+    sendCmd(cmds["stop"], [])

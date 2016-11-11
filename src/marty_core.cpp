@@ -48,7 +48,7 @@ void MartyCore::loadParams() {
   for (int id = 0; id < NUMJOINTS; ++id) {
     joint.servo_id = id;
     joint.servo_cmd = joint_[id].cmdZero;
-    servo_msg_array_.servo_msg.push_back(joint);
+    // servo_msg_array_.servo_msg.push_back(joint);
   }
 }
 
@@ -100,12 +100,10 @@ void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
     }
     falling_pub_.publish(falling_);
   }
-  ros::spinOnce();
 }
 
 void MartyCore::battCB(const std_msgs::Float32::ConstPtr& msg) {
   battery_val_ = msg->data;
-  ros::spinOnce();
 }
 
 int MartyCore::jointPosToServoCmd(int id, float pos) {
@@ -126,7 +124,6 @@ void MartyCore::setServoPos(int channel, int pos) {
   servo_msg_.servo_id = channel;
   servo_msg_.servo_cmd = pos;
   servo_pub_.publish(servo_msg_);
-  ros::spinOnce();
 }
 
 void MartyCore::enableRobot() {
@@ -148,12 +145,15 @@ bool MartyCore::setServo(int id, float angle) {
   return true;
 }
 
-void MartyCore::setServos(std::deque <float> angles) {
-  for (int id = 0; id < angles.size(); ++id) {
-    servo_msg_array_.servo_msg[id].servo_cmd =
-      jointPosToServoCmd(id, angles.at(id));
-    jangles_[id] = angles.at(id);
+void MartyCore::setServos(std::map<int, float> angles) {
+  marty_msgs::ServoMsgArray servo_msg_array;
+  for (std::map<int, float>::iterator i = angles.begin(); i != angles.end();
+       ++i) {
+    marty_msgs::ServoMsg servo_msg;
+    servo_msg.servo_id = i->first;
+    servo_msg.servo_cmd = jointPosToServoCmd(i->first, i->second);
+    servo_msg_array.servo_msg.push_back(servo_msg);
+    jangles_[i->first] = angles.at(i->first);
   }
-  servo_array_pub_.publish(servo_msg_array_);
-  ros::spinOnce();
+  servo_array_pub_.publish(servo_msg_array);
 }
