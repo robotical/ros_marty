@@ -48,6 +48,7 @@ void CmdServer::runCommand(vector<int> data) {
   case CMD_HIPTOBESQUARE: dance(data); break;
   case CMD_ROLLERSKATE: rollerSkate(robot_); break;
   case CMD_ARMS: arms(data); break;
+  case CMD_DEMO: demo(); break;
   case CMD_STOP: stopRobot(); break;
   default:
     ROS_ERROR_STREAM("CmdServer did not recognise command " << data[0]); break;
@@ -296,6 +297,124 @@ void CmdServer::arms(vector<int> data) {
   float angle2 = data[2];
   std::map<int, float> angles = {{RARM, angle1}, {LARM, angle2}};
   robot_->setServos(angles);
+}
+
+void CmdServer::demo() {
+  float alpha = 0;
+  int delay = 17500;
+  // deque<float> setpos(NUMJOINTS, 0);
+  std::map<int, float> angles;
+  for (int i = 0; i < NUMJOINTS; ++i) {
+    angles[i] = robot_->jangles_[i];
+  }
+  // Default Arm positions
+  robot_->setServo(EYES, EYESNORMAL);
+  sleep(1);
+  robot_->setServo(EYES, EYESANGRY);
+  sleep(1);
+  robot_->setServo(EYES, EYESEXCITED);
+  sleep(1);
+  robot_->setServo(EYES, EYESWIDE);
+  sleep(1);
+
+  // Test eyes
+  for (alpha = 0; alpha < 6.28; alpha += 0.1) {
+    robot_->setServo(EYES, EYESANGRY * sin(alpha));;
+    usleep(delay);
+  }
+
+  // Arms Swing Together
+  for (alpha = 0; alpha < 12.56; alpha += 0.1) {
+    // robot_->setServo(RARM, 100 * sin(alpha));
+    // robot_->setServo(LARM, 100 * sin(alpha));
+    angles[RARM] = 100 * sin(alpha);
+    angles[LARM] = 100 * sin(alpha);
+    robot_->setServos(angles);
+    usleep(delay);
+  }
+
+  // Arms Swing Opposed
+  for (alpha = 0; alpha < 12.56; alpha += 0.1) {
+    // robot_->setServo(RARM, 100 * sin(alpha));
+    // robot_->setServo(LARM, -100 * sin(alpha));
+    angles[RARM] = 100 * sin(alpha);
+    angles[LARM] = -100 * sin(alpha);
+    robot_->setServos(angles);
+    usleep(delay);
+  }
+
+  // Forward and Backward
+  for (alpha = 0; alpha < 12.56; alpha += 0.1) {
+    angles[RHIP] = 45 * sin(alpha); angles[LHIP] = angles[RHIP];
+    robot_->setServos(angles);
+    usleep(delay);
+  }
+
+  // Side to Side
+  for (alpha = 0; alpha < 12.56; alpha += 0.1) {
+    angles[RKNEE] = 45 * sin(alpha); angles[LKNEE] = angles[RKNEE];
+    robot_->setServos(angles);
+    usleep(delay);
+  }
+
+  // Feet Twist in same direction
+  angles[RHIP] = 0; angles[RKNEE] = 0; angles[LHIP] = 0;
+  angles[LKNEE] = 0;
+  for (alpha = 0; alpha < 12.56; alpha += 0.1) {
+    angles[RTWIST] = 45 * sin(alpha); angles[LTWIST] = angles[RTWIST];
+    robot_->setServos(angles);
+
+    usleep(delay);
+  }
+
+  // Feet Twist in opposite direction
+  for (alpha = 0; alpha < 12.56; alpha += 0.1) {
+    angles[RTWIST] = 20 * sin(alpha); angles[LTWIST] = 0 - angles[RTWIST];
+    robot_->setServos(angles);
+    usleep(delay);
+  }
+
+  // Test Left Leg
+  data_t genTraj;
+  genTraj = genRaisedFootTwistLeft(robot_, 4.0);
+  runTrajectory(robot_, genTraj);
+  genTraj.clear();
+
+  // Test Right Leg
+  genTraj = genRaisedFootTwistRight(robot_, 4.0);
+  runTrajectory(robot_, genTraj);
+  genTraj.clear();
+
+  // Walk about
+  for (int numstep = 0; numstep < 1; numstep++) {
+    genTraj = genStepLeft(robot_, 0, 25, 1.25, 0);
+    runTrajectory(robot_, genTraj);
+    genTraj.clear();
+
+    genTraj = genStepRight(robot_, 0, 25, 1.25, 0);
+    runTrajectory(robot_, genTraj);
+    genTraj.clear();
+  }
+
+  for (int numstep = 0; numstep < 2; numstep++) {
+    genTraj = genStepLeft(robot_, 80, 0, 1.5, 0);
+    runTrajectory(robot_, genTraj);
+    genTraj.clear();
+
+    genTraj = genStepRight(robot_, 80, 0, 1.5, 0);
+    runTrajectory(robot_, genTraj);
+    genTraj.clear();
+  }
+
+  // Test a Left Kick
+  genTraj = genKickLeft(robot_, 2.0);
+  runTrajectory(robot_, genTraj);
+  genTraj.clear();
+
+  // Celebrate!
+  genTraj = genCelebration(robot_, 4.0);
+  runTrajectory(robot_, genTraj);
+  genTraj.clear();
 }
 
 void CmdServer::stopRobot() {

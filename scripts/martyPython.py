@@ -24,7 +24,8 @@ cmds = {
   "hiptobesquare": 13,
   "rollerskate": 14,
   "arms": 15,
-  "stop": 16,
+  "demo": 16,
+  "stop": 17
 }
 
 encoding = {
@@ -134,7 +135,7 @@ def moveHip(leg, amount, movetime=20):
     sendCmd(cmds["movehip"], [leg, sign, amount, movetime])
     return True
 
-def moveLeftHip(amount):
+def moveLeftHip(amount):    # TODO: Are these commands used / implemented?
     return moveHip(encoding["left"], amount)
 
 def moveRightHip(amount, movetime=20):
@@ -210,6 +211,9 @@ def hipToBeSquare():
 
 def rollerSkate():
     sendCmd(cmds["rollerskate"], [])
+
+def demo():
+    sendCmd(cmds["demo"], [])
 
 def stop():
     sendCmd(cmds["stop"], [])

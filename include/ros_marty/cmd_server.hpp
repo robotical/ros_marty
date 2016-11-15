@@ -57,6 +57,7 @@ enum Commands {
   CMD_HIPTOBESQUARE,
   CMD_ROLLERSKATE,
   CMD_ARMS,
+  CMD_DEMO,
   CMD_STOP
 };
 
@@ -83,6 +84,7 @@ class CmdServer {
   void lowerLeg(vector<int> data);
   void dance(vector<int> data);
   void arms(vector<int> data);
+  void demo();
   void stopRobot();
 
   // Variables
