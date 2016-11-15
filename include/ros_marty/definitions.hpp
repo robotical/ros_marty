@@ -77,8 +77,8 @@ const std::vector <int> JOINT_MULT = {
   1,  //   "LTWIST",
   1,  //   "LKNEE",
   1,  //   "EYES",
-  1,  //   "RARM",
-  1,  //   "LARM",
+  2,  //   "RARM",
+  2,  //   "LARM",
   1,  //   "AUX1",
   1   //   "AUX2"
 };
@@ -100,14 +100,14 @@ const std::map<std::string, int> JOINT_NAMES = {
 # define HIPOFFSET 100
 # define TWISTOFFSET 110
 # define KNEEOFFSET 110
-# define ARMOFFSET 110
-# define EYESOFFSET 100
+# define ARMOFFSET 300
+# define EYESOFFSET 300
 # define AUXOFFSET 110
 
 // TODO: These should not be definitions, but in joint calibration as rosparams!
 
-#define EYESANGRY   90
-#define EYESNORMAL  70
+#define EYESANGRY   80
+#define EYESNORMAL  60
 #define EYESEXCITED 20
 #define EYESWIDE  -100
 

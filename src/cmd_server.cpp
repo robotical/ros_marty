@@ -301,8 +301,7 @@ void CmdServer::arms(vector<int> data) {
 
 void CmdServer::demo() {
   float alpha = 0;
-  int delay = 17500;
-  // deque<float> setpos(NUMJOINTS, 0);
+  int delay = 20000;
   std::map<int, float> angles;
   for (int i = 0; i < NUMJOINTS; ++i) {
     angles[i] = robot_->jangles_[i];
@@ -325,8 +324,6 @@ void CmdServer::demo() {
 
   // Arms Swing Together
   for (alpha = 0; alpha < 12.56; alpha += 0.1) {
-    // robot_->setServo(RARM, 100 * sin(alpha));
-    // robot_->setServo(LARM, 100 * sin(alpha));
     angles[RARM] = 100 * sin(alpha);
     angles[LARM] = 100 * sin(alpha);
     robot_->setServos(angles);
@@ -335,8 +332,6 @@ void CmdServer::demo() {
 
   // Arms Swing Opposed
   for (alpha = 0; alpha < 12.56; alpha += 0.1) {
-    // robot_->setServo(RARM, 100 * sin(alpha));
-    // robot_->setServo(LARM, -100 * sin(alpha));
     angles[RARM] = 100 * sin(alpha);
     angles[LARM] = -100 * sin(alpha);
     robot_->setServos(angles);

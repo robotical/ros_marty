@@ -156,4 +156,5 @@ void MartyCore::setServos(std::map<int, float> angles) {
     jangles_[i->first] = angles.at(i->first);
   }
   servo_array_pub_.publish(servo_msg_array);
+  ros::spinOnce();
 }
