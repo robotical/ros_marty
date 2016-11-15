@@ -7,13 +7,13 @@
 // TODO: Re-Write using iterators rather than popping.
 // Also then don't need to copy tIn, maybe rewrite to produce uniform dt on tOut
 
-float gettime() {
+float Trajectory::gettime() {
   struct timespec monotime;
   clock_gettime(CLOCK_MONOTONIC, &monotime);
   return (monotime.tv_sec + ((float)monotime.tv_nsec) / 1000000000);
 }
 
-bool interpTrajectory(data_t tIn, data_t& tOut, float dt) {
+bool Trajectory::interpTrajectory(data_t tIn, data_t& tOut, float dt) {
   if (tIn.empty())
     return false;
 
@@ -47,7 +47,7 @@ bool interpTrajectory(data_t tIn, data_t& tOut, float dt) {
 }
 
 
-void printTrajectory(data_t& traj) {
+void Trajectory::printTrajectory(data_t& traj) {
   if (DEBUG_MODE) {
     printf("trajectory size: %d x %d\n", (int)traj.size(), (int)traj[0].size());
 
@@ -60,7 +60,7 @@ void printTrajectory(data_t& traj) {
   return;
 }
 
-bool runTrajectory(MartyCore& robot, data_t& traj) {
+bool Trajectory::runTrajectory(MartyCore* robot, data_t& traj) {
   float startTime = gettime();
 
   data_t::record_iterator ri = traj.begin();
@@ -72,23 +72,19 @@ bool runTrajectory(MartyCore& robot, data_t& traj) {
       for (int i = 0; i < NUMJOINTS; ++i) {
         angles[i] = thisline[i];
       }
-      // robot.setServos(thisline);
-      robot.setServos(angles);
+      // robot->setServos(thisline);
+      robot->setServos(angles);
       ri++;
     }
   }
   return true;
 }
 
-// temp defs
-#define WKSMALL 45 // 65 //62 // 75 // 45
-#define WKLARGE 125
-#define HIPSTEP 30
-
-data_t genStepLeft(MartyCore& robot, int stepLength, int turn, float period,
-                   char flags) {
+data_t Trajectory::genStepLeft(MartyCore* robot, int stepLength, int turn,
+                               float period,
+                               char flags) {
   data_t tSetpoints, tInterp;
-  deque<float> tline(robot.jangles_);
+  deque<float> tline(robot->jangles_);
   tline.push_front(0.0);
   tSetpoints.push_back(tline);
 
@@ -118,10 +114,11 @@ data_t genStepLeft(MartyCore& robot, int stepLength, int turn, float period,
   return tInterp;
 }
 
-data_t genStepRight(MartyCore& robot, int stepLength, int turn, float period,
-                    char flags) {
+data_t Trajectory::genStepRight(MartyCore* robot, int stepLength, int turn,
+                                float period,
+                                char flags) {
   data_t tSetpoints, tInterp;
-  deque<float> tline(robot.jangles_);
+  deque<float> tline(robot->jangles_);
   tline.push_front(0.0);
   tSetpoints.push_back(tline);
 
@@ -152,9 +149,9 @@ data_t genStepRight(MartyCore& robot, int stepLength, int turn, float period,
 
 }
 
-data_t genCelebration(MartyCore& robot, float period) {
+data_t Trajectory::genCelebration(MartyCore* robot, float period) {
   data_t tSetpoints, tInterp;
-  deque<float> tline(robot.jangles_);
+  deque<float> tline(robot->jangles_);
   tline.push_front(0.0);
   tSetpoints.push_back(tline);
 
@@ -191,9 +188,9 @@ data_t genCelebration(MartyCore& robot, float period) {
   return tInterp;
 }
 
-data_t genRaisedFootTwistLeft(MartyCore& robot, float period) {
+data_t Trajectory::genRaisedFootTwistLeft(MartyCore* robot, float period) {
   data_t tSetpoints, tInterp;
-  deque<float> tline(robot.jangles_);
+  deque<float> tline(robot->jangles_);
   tline.push_front(0.0);
   tSetpoints.push_back(tline);
 
@@ -238,9 +235,9 @@ data_t genRaisedFootTwistLeft(MartyCore& robot, float period) {
 
 }
 
-data_t genRaisedFootTwistRight(MartyCore& robot, float period) {
+data_t Trajectory::genRaisedFootTwistRight(MartyCore* robot, float period) {
   data_t tSetpoints, tInterp;
-  deque<float> tline(robot.jangles_);
+  deque<float> tline(robot->jangles_);
   tline.push_front(0.0);
   tSetpoints.push_back(tline);
 
@@ -285,9 +282,9 @@ data_t genRaisedFootTwistRight(MartyCore& robot, float period) {
 
 }
 
-data_t genKickLeft(MartyCore& robot, float period) {
+data_t Trajectory::genKickLeft(MartyCore* robot, float period) {
   data_t tSetpoints, tInterp;
-  deque<float> tline(robot.jangles_);
+  deque<float> tline(robot->jangles_);
   tline.push_front(0.0);
   tSetpoints.push_back(tline);
 
@@ -321,9 +318,9 @@ data_t genKickLeft(MartyCore& robot, float period) {
   return tInterp;
 
 }
-data_t genKickRight(MartyCore& robot, float period) {
+data_t Trajectory::genKickRight(MartyCore* robot, float period) {
   data_t tSetpoints, tInterp;
-  deque<float> tline(robot.jangles_);
+  deque<float> tline(robot->jangles_);
   tline.push_front(0.0);
   tSetpoints.push_back(tline);
 
@@ -357,9 +354,9 @@ data_t genKickRight(MartyCore& robot, float period) {
 
 }
 
-data_t genGetUp(MartyCore& robot) {
+data_t Trajectory::genGetUp(MartyCore* robot) {
   data_t tSetpoints, tInterp;
-  deque<float> tline(robot.jangles_);
+  deque<float> tline(robot->jangles_);
   tline.push_front(0.0);
   tSetpoints.push_back(tline);
 
@@ -420,9 +417,9 @@ data_t genGetUp(MartyCore& robot) {
 
 }
 
-data_t genReturnToZero(MartyCore& robot, float period) {
+data_t Trajectory::genReturnToZero(MartyCore* robot, float period) {
   data_t tSetpoints, tInterp;
-  deque<float> tline(robot.jangles_);
+  deque<float> tline(robot->jangles_);
   tline.push_front(0.0);
   tSetpoints.push_back(tline);
 
@@ -435,8 +432,9 @@ data_t genReturnToZero(MartyCore& robot, float period) {
   return tInterp;
 }
 
-bool setPointsLeanLeft(data_t& tSetpoints, int leanAmount, int legLift,
-                       float period) {
+bool Trajectory::setPointsLeanLeft(data_t& tSetpoints, int leanAmount,
+                                   int legLift,
+                                   float period) {
   deque <float> tline(tSetpoints.back());
 
   tline[0] += period;
@@ -448,8 +446,9 @@ bool setPointsLeanLeft(data_t& tSetpoints, int leanAmount, int legLift,
   return 1;
 }
 
-bool setPointsLeanRight(data_t& tSetpoints, int leanAmount, int legLift,
-                        float period) {
+bool Trajectory::setPointsLeanRight(data_t& tSetpoints, int leanAmount,
+                                    int legLift,
+                                    float period) {
   deque <float> tline(tSetpoints.back());
 
   tline[0] += period;
@@ -461,7 +460,8 @@ bool setPointsLeanRight(data_t& tSetpoints, int leanAmount, int legLift,
   return 1;
 }
 
-bool setPointsLeanForward(data_t& tSetpoints, int leanAmount, float period) {
+bool Trajectory::setPointsLeanForward(data_t& tSetpoints, int leanAmount,
+                                      float period) {
   deque <float> tline(tSetpoints.back());
 
   tline[0] += period;
@@ -471,7 +471,8 @@ bool setPointsLeanForward(data_t& tSetpoints, int leanAmount, float period) {
   return 1;
 }
 
-bool setPointsLeanBackward(data_t& tSetpoints, int leanAmount, float period) {
+bool Trajectory::setPointsLeanBackward(data_t& tSetpoints, int leanAmount,
+                                       float period) {
   deque <float> tline(tSetpoints.back());
 
   tline[0] += period;
@@ -481,7 +482,7 @@ bool setPointsLeanBackward(data_t& tSetpoints, int leanAmount, float period) {
   return 1;
 }
 
-bool setPointsLegsZero(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsLegsZero(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
 
   tline[0] += period;
@@ -493,7 +494,7 @@ bool setPointsLegsZero(data_t& tSetpoints, float period) {
   return 1;
 }
 
-bool setPointsCrossLeftLeg(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsCrossLeftLeg(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
 
   tline[0] += period;
@@ -505,7 +506,7 @@ bool setPointsCrossLeftLeg(data_t& tSetpoints, float period) {
   return 1;
 }
 
-bool setPointsCrossRightLeg(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsCrossRightLeg(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
 
   tline[0] += period;
@@ -517,7 +518,7 @@ bool setPointsCrossRightLeg(data_t& tSetpoints, float period) {
   return 1;
 }
 
-bool setPointsLegsApart(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsLegsApart(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
 
   tline[0] += period;
@@ -528,7 +529,7 @@ bool setPointsLegsApart(data_t& tSetpoints, float period) {
   return 1;
 }
 
-bool setPointsKickOutLeft(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsKickOutLeft(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -565,7 +566,7 @@ bool setPointsKickOutLeft(data_t& tSetpoints, float period) {
   return 1;
 }
 
-bool setPointsKickOutRight(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsKickOutRight(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -602,7 +603,7 @@ bool setPointsKickOutRight(data_t& tSetpoints, float period) {
   return 1;
 }
 
-bool setPointsFlickRight(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsFlickRight(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -620,7 +621,7 @@ bool setPointsFlickRight(data_t& tSetpoints, float period) {
   return 1;
 }
 
-bool setPointsCircleACW(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsCircleACW(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -648,7 +649,7 @@ bool setPointsCircleACW(data_t& tSetpoints, float period) {
   return 1;
 }
 
-bool setPointsCircleCW(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsCircleCW(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -676,7 +677,7 @@ bool setPointsCircleCW(data_t& tSetpoints, float period) {
   return 1;
 }
 
-bool setPointsTapFR(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsTapFR(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -696,7 +697,7 @@ bool setPointsTapFR(data_t& tSetpoints, float period) {
   return 1;
 }
 
-bool setPointsTapMR(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsTapMR(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -716,7 +717,7 @@ bool setPointsTapMR(data_t& tSetpoints, float period) {
   return 1;
 }
 
-bool setPointsTapBR(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsTapBR(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -736,7 +737,7 @@ bool setPointsTapBR(data_t& tSetpoints, float period) {
   return 1;
 }
 
-bool setPointsTapFL(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsTapFL(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -756,7 +757,7 @@ bool setPointsTapFL(data_t& tSetpoints, float period) {
   return 1;
 }
 
-bool setPointsTapML(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsTapML(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -776,7 +777,7 @@ bool setPointsTapML(data_t& tSetpoints, float period) {
   return 1;
 }
 
-bool setPointsTapBL(data_t& tSetpoints, float period) {
+bool Trajectory::setPointsTapBL(data_t& tSetpoints, float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -797,8 +798,9 @@ bool setPointsTapBL(data_t& tSetpoints, float period) {
 }
 
 
-bool setPointsArmsUp(data_t& tSetpoints, float amountRight, float amountLeft,
-                     float period) {
+bool Trajectory::setPointsArmsUp(data_t& tSetpoints, float amountRight,
+                                 float amountLeft,
+                                 float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -809,7 +811,8 @@ bool setPointsArmsUp(data_t& tSetpoints, float amountRight, float amountLeft,
   return 1;
 }
 
-bool setPointsLeftArmUp(data_t& tSetpoints, float amount, float period) {
+bool Trajectory::setPointsLeftArmUp(data_t& tSetpoints, float amount,
+                                    float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -820,7 +823,8 @@ bool setPointsLeftArmUp(data_t& tSetpoints, float amount, float period) {
   return 1;
 }
 
-bool setPointsRightArmUp(data_t& tSetpoints, float amount, float period) {
+bool Trajectory::setPointsRightArmUp(data_t& tSetpoints, float amount,
+                                     float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -831,7 +835,8 @@ bool setPointsRightArmUp(data_t& tSetpoints, float amount, float period) {
   return 1;
 }
 
-bool setPointsEyes(data_t& tSetpoints, float targetPos, float period) {
+bool Trajectory::setPointsEyes(data_t& tSetpoints, float targetPos,
+                               float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -846,7 +851,8 @@ bool setPointsEyes(data_t& tSetpoints, float targetPos, float period) {
 // e.g. for combining leg and arm movements
 // treats the time code in the same way as a joint
 //    i.e. THE dt FOR BOTH TRAJECTORIES MUST BE THE SAME!
-data_t combineTrajectories(data_t& t1, data_t& t2, vector<bool> which) {
+data_t Trajectory::combineTrajectories(data_t& t1, data_t& t2,
+                                       vector<bool> which) {
   data_t traj;
   data_t::record_iterator ni2 = t2.begin();
   for (data_t::record_iterator ni1 = t1.begin(); ni1 != t1.end(); ni1++) {
@@ -864,7 +870,8 @@ data_t combineTrajectories(data_t& t1, data_t& t2, vector<bool> which) {
   return traj;
 }
 
-data_t combineLegsArmsEyes(data_t& legs, data_t& arms, data_t& eyes) {
+data_t Trajectory::combineLegsArmsEyes(data_t& legs, data_t& arms,
+                                       data_t& eyes) {
   data_t tlegsArms, genTraj;
   vector<bool> ji(1 + NUMJOINTS, 0);
   ji[1 + RARM] = 1; ji[1 + LARM] = 1;
@@ -876,7 +883,7 @@ data_t combineLegsArmsEyes(data_t& legs, data_t& arms, data_t& eyes) {
 }
 
 
-int hipToBeSquare(MartyCore& robot, int robotID) {
+int Trajectory::hipToBeSquare(MartyCore* robot, int robotID) {
 #define BEAT  0.4255
 
   printf("starting\n");
@@ -885,7 +892,7 @@ int hipToBeSquare(MartyCore& robot, int robotID) {
 
   data_t tLegs, tArms, tEyes;
   data_t tiLegs, tiArms, tiEyes;
-  deque<float> tline(robot.jangles_);
+  deque<float> tline(robot->jangles_);
   tline.push_front(0);
   tLegs.push_back(tline);
   tArms.push_back(tline);
@@ -1088,7 +1095,8 @@ int hipToBeSquare(MartyCore& robot, int robotID) {
   return 1;
 }
 
-bool setPointsSkateLeft(data_t& tSetpoints, float amount, float period) {
+bool Trajectory::setPointsSkateLeft(data_t& tSetpoints, float amount,
+                                    float period) {
   deque <float> tline(tSetpoints.back());
   float startTime = tline[0];
 
@@ -1134,12 +1142,12 @@ bool setPointsSkateLeft(data_t& tSetpoints, float amount, float period) {
   return 1;
 }
 
-int rollerSkate(MartyCore& robot) {
+int Trajectory::rollerSkate(MartyCore* robot) {
   data_t tSetpoints, genTraj;
 
   data_t tLegs, tArms, tEyes;
   data_t tiLegs, tiArms, tiEyes;
-  deque<float> tline(robot.jangles_);
+  deque<float> tline(robot->jangles_);
   tline.push_front(0);
   tLegs.push_back(tline);
   tArms.push_back(tline);

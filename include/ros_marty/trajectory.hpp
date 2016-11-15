@@ -11,22 +11,32 @@
 #define TRAJ_FROMZERO   0x01
 #define TRAJ_TOZERO   0x02
 
+// temp defs
+#define WKSMALL 45 // 65 //62 // 75 // 45
+#define WKLARGE 125
+#define HIPSTEP 30
+
+namespace Trajectory {
+// protected:
+
+// public:
+
 float gettime();
 
 bool interpTrajectory(data_t tIn, data_t& tOut, float dt);
 void printTrajectory(data_t& traj);
-bool runTrajectory(MartyCore& robot, data_t& traj);
-data_t genStepLeft(MartyCore& robot, int stepLength, int turn, float period,
+bool runTrajectory(MartyCore* robot, data_t& traj);
+data_t genStepLeft(MartyCore* robot, int stepLength, int turn, float period,
                    char flags);
-data_t genStepRight(MartyCore& robot, int stepLength, int turn, float period,
+data_t genStepRight(MartyCore* robot, int stepLength, int turn, float period,
                     char flags);
-data_t genKickLeft(MartyCore& robot, float period);
-data_t genKickRight(MartyCore& robot, float period);
-data_t genGetUp(MartyCore& robot);
-data_t genRaisedFootTwistLeft(MartyCore& robot, float period);
-data_t genRaisedFootTwistRight(MartyCore& robot, float period);
-data_t genCelebration(MartyCore& robot, float period);
-data_t genReturnToZero(MartyCore& robot, float period);
+data_t genKickLeft(MartyCore* robot, float period);
+data_t genKickRight(MartyCore* robot, float period);
+data_t genGetUp(MartyCore* robot);
+data_t genRaisedFootTwistLeft(MartyCore* robot, float period);
+data_t genRaisedFootTwistRight(MartyCore* robot, float period);
+data_t genCelebration(MartyCore* robot, float period);
+data_t genReturnToZero(MartyCore* robot, float period);
 bool setPointsLeanLeft(data_t& tSetpoints, int leanAmount, int legLift,
                        float period);
 bool setPointsLeanRight(data_t& tSetpoints, int leanAmount, int legLift,
@@ -59,8 +69,12 @@ bool setPointsEyes(data_t& tSetpoints, float targetPos, float period);
 data_t combineTrajectories(data_t& t1, data_t& t2, vector<bool> ti);
 data_t combineLegsArmsEyes(data_t& legs, data_t& arms, data_t& eyes);
 
-int hipToBeSquare(MartyCore& robot, int robotID);
+int hipToBeSquare(MartyCore* robot, int robotID);
 bool setPointsSkateLeft(data_t& tSetpoints, float amount, float period);
-int rollerSkate(MartyCore& robot);
+int rollerSkate(MartyCore* robot);
+
+// private:
+
+};
 
 #endif  /* MARTY_TRAJECTORY_HPP */
