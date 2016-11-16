@@ -70,9 +70,21 @@ void MartyCore::rosSetup() {
   // SUBSCRIBERS
   accel_sub_ = nh_.subscribe("/accel", 1000, &MartyCore::accelCB, this);
   batt_sub_ = nh_.subscribe("/battery", 1000, &MartyCore::battCB, this);
+  gpio_sub_ = nh_.subscribe("/gpios", 1000, &MartyCore::gpioCB, this);
   // SERVICES
   fall_dis_srv_ = nh_.advertiseService("/marty/fall_disable",
                                        &MartyCore::setFallDetector, this);
+  ros::service::waitForService("/marty/set_gpio_config");
+  set_gpio_config_ =
+    nh_.serviceClient<marty_msgs::GPIOConfig>("/marty/set_gpio_config");
+  ros::service::waitForService("/marty/get_gpio_config");
+  get_gpio_config_ =
+    nh_.serviceClient<marty_msgs::GPIOConfig>("/marty/get_gpio_config");
+  marty_msgs::GPIOConfig srv;
+  srv.request.config[0] = marty_msgs::GPIOConfig::Request::DIGITAL_IN;
+  if (set_gpio_config_.call(srv)) {
+    if (srv.response.success) {ROS_INFO("SUCCESS!");} else {ROS_WARN("NAY!");}
+  } else { ROS_ERROR("Failed to call set gpio service!"); }
 }
 
 bool MartyCore::setFallDetector(std_srvs::SetBool::Request&  req,
@@ -104,6 +116,10 @@ void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
 
 void MartyCore::battCB(const std_msgs::Float32::ConstPtr& msg) {
   battery_val_ = msg->data;
+}
+
+void MartyCore::gpioCB(const marty_msgs::GPIOs::ConstPtr& msg) {
+  gpios_val_ = *msg;
 }
 
 int MartyCore::jointPosToServoCmd(int id, float pos) {

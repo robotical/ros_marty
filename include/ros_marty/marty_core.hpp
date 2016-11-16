@@ -19,9 +19,13 @@
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float32.h>
 #include <std_srvs/SetBool.h>
+#include <marty_msgs/Accelerometer.h>
+#include <marty_msgs/GPIOs.h>
+#include <marty_msgs/MotorCurrents.h>
+#include <marty_msgs/Output.h>
 #include <marty_msgs/ServoMsg.h>
 #include <marty_msgs/ServoMsgArray.h>
-#include <marty_msgs/Accelerometer.h>
+#include <marty_msgs/GPIOConfig.h>
 
 // MARTY
 #include <ros_marty/definitions.hpp>
@@ -67,6 +71,8 @@ class MartyCore {
  private:
   void accelCB(const marty_msgs::Accelerometer::ConstPtr& msg);
   void battCB(const std_msgs::Float32::ConstPtr& msg);
+  void gpioCB(const marty_msgs::GPIOs::ConstPtr& msg);
+
 
   bool setFallDetector(std_srvs::SetBool::Request&  req,
                        std_srvs::SetBool::Response& res);
@@ -82,6 +88,7 @@ class MartyCore {
   marty_msgs::Accelerometer accel_;
   std_msgs::Bool falling_;
   float battery_val_;
+  marty_msgs::GPIOs gpios_val_;
 
   // ROS
   std_msgs::Bool enable_robot_;
@@ -94,8 +101,10 @@ class MartyCore {
   ros::Publisher  servo_array_pub_;
   ros::Subscriber accel_sub_;
   ros::Subscriber batt_sub_;
+  ros::Subscriber gpio_sub_;
   ros::ServiceServer fall_dis_srv_;
-
+  ros::ServiceClient set_gpio_config_;
+  ros::ServiceClient get_gpio_config_;
 };
 
 #endif  /* MARTY_CORE_HPP */
