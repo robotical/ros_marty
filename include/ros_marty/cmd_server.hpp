@@ -16,6 +16,7 @@
 #include <signal.h>
 
 // Marty
+#include "marty_msgs/Command.h"
 #include "ros_marty/marty_core.hpp"
 // #include "ros_marty/data_t.hpp"
 #include "ros_marty/trajectory.hpp"
@@ -66,7 +67,7 @@ class CmdServer {
   ros::NodeHandle nh_;
   void loadParams();
   void init();
-  // void rosSetup();
+  void rosSetup();
 
  private:
   // Methods
@@ -87,9 +88,20 @@ class CmdServer {
   void demo();
   void stopRobot();
 
+  bool cmd_service(marty_msgs::Command::Request&  req,
+                   marty_msgs::Command::Response& res);
+
+  // Flags
+  bool busy_;
+  bool ros_cmd_;
+
   // Variables
   MartyCore* robot_;
   int sock_;
+  std::vector<int> cmd_data_;
+
+  // ROS
+  ros::ServiceServer cmd_srv_;
 
  public:
   CmdServer(ros::NodeHandle& nh);
@@ -98,7 +110,6 @@ class CmdServer {
   void setupServer();
   void stopServer();
   void waitForCmd();
-
 };
 
 #endif  /* CMD_SERVER_HPP */

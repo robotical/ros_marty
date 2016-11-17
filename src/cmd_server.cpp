@@ -33,6 +33,7 @@ void CmdServer::robotReady() {
  * @param data Received data array
  */
 void CmdServer::runCommand(vector<int> data) {
+  busy_ = true;
   switch (data[0]) {
   case CMD_HELLO: hello(); break;
   case CMD_MOVEKNEE: moveKnee(data); break;
@@ -53,6 +54,7 @@ void CmdServer::runCommand(vector<int> data) {
   default:
     ROS_ERROR_STREAM("CmdServer did not recognise command " << data[0]); break;
   }
+  busy_ = false;
 }
 
 void CmdServer::hello() {
@@ -417,8 +419,7 @@ void CmdServer::stopRobot() {
   robot_->stopRobot();
 }
 
-// SERVER FUNCTIONS
-
+// SERVER FUNCTIONS, DO NOT TOUCH!
 volatile sig_atomic_t exiting = 0;
 void exit_f(int sig) {
   ROS_WARN("EXITING!");
@@ -430,7 +431,7 @@ void exit_f(int sig) {
 CmdServer::CmdServer(ros::NodeHandle& nh) : nh_(nh) {
   this->loadParams();
   this->init();
-  // this->rosSetup();
+  this->rosSetup();
   ROS_INFO("CmdServer Ready!");
 }
 
@@ -449,10 +450,20 @@ void CmdServer::loadParams() {
 
 void CmdServer::init() {
   robot_ = new MartyCore(nh_);
+  busy_ = false;
+  ros_cmd_ = false;
 }
 
-// void CmdServer::rosSetup() {
-// }
+void CmdServer::rosSetup() {
+  cmd_srv_ = nh_.advertiseService("command", &CmdServer::cmd_service, this);
+}
+
+bool CmdServer::cmd_service(marty_msgs::Command::Request&  req,
+                            marty_msgs::Command::Response& res) {
+  if (!busy_) { ros_cmd_ = true; cmd_data_ = req.data; res.success = true; }
+  else { res.success = false; }
+  return true;
+}
 
 void CmdServer::setupServer() {
   // Create socket, initialise and listen
@@ -506,6 +517,9 @@ void CmdServer::waitForCmd() {
       ROS_DEBUG("Done!\n");
     }
     close(clisock);
+  } else if (ros_cmd_) {
+    runCommand(cmd_data_);
+    ros_cmd_ = false;
   }
 }
 
