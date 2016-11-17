@@ -122,11 +122,6 @@ else()
 	set(CMAKE_C_COMPILER "/usr/bin/clang-${VERS}")
 endif()
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-deprecated-register -O2")
-# if(VERS=="")
-# 	message("No CLang version found, using default")
-# else()
-# 	message("CLANG FOUND"${VERS})
-# endif()
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -161,9 +156,6 @@ add_executable(cmd_server
   src/trajectory.cpp
   src/data_t.cpp)
 
-add_executable(keyboard
-  src/keyboard.cpp)
-
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(ros_marty
@@ -173,9 +165,6 @@ add_dependencies(calibrate
   marty_msgs_gencpp)
 
 add_dependencies(cmd_server
-  marty_msgs_gencpp)
-
-add_dependencies(keyboard
   marty_msgs_gencpp)
 
 ## Specify libraries to link a library or executable target against
@@ -188,10 +177,6 @@ target_link_libraries(calibrate
 )
 
 target_link_libraries(cmd_server
-  ${catkin_LIBRARIES}
-)
-
-target_link_libraries(keyboard
   ${catkin_LIBRARIES}
 )
 
