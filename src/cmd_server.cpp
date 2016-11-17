@@ -81,7 +81,7 @@ void CmdServer::walk(vector<int> data) {
     walkDir = -1;
   uint8_t stepLength = data[3];
   int turnDir = 1;
-  if (data[4] == CMD_LEFT)
+  if (data[4] == CMD_RIGHT)
     turnDir = -1;
   uint8_t turn = data[5];
   uint8_t whichFoot = 0;

@@ -74,17 +74,17 @@ void MartyCore::rosSetup() {
   // SERVICES
   fall_dis_srv_ = nh_.advertiseService("/marty/fall_disable",
                                        &MartyCore::setFallDetector, this);
-  ros::service::waitForService("/marty/set_gpio_config");
-  set_gpio_config_ =
-    nh_.serviceClient<marty_msgs::GPIOConfig>("/marty/set_gpio_config");
-  ros::service::waitForService("/marty/get_gpio_config");
-  get_gpio_config_ =
-    nh_.serviceClient<marty_msgs::GPIOConfig>("/marty/get_gpio_config");
-  marty_msgs::GPIOConfig srv;
-  srv.request.config[0] = marty_msgs::GPIOConfig::Request::DIGITAL_IN;
-  if (set_gpio_config_.call(srv)) {
-    if (srv.response.success) {ROS_INFO("SUCCESS!");} else {ROS_WARN("NAY!");}
-  } else { ROS_ERROR("Failed to call set gpio service!"); }
+  // ros::service::waitForService("/marty/set_gpio_config");
+  // set_gpio_config_ =
+  //   nh_.serviceClient<marty_msgs::GPIOConfig>("/marty/set_gpio_config");
+  // ros::service::waitForService("/marty/get_gpio_config");
+  // get_gpio_config_ =
+  //   nh_.serviceClient<marty_msgs::GPIOConfig>("/marty/get_gpio_config");
+  // marty_msgs::GPIOConfig srv;
+  // srv.request.config[0] = marty_msgs::GPIOConfig::Request::DIGITAL_IN;
+  // if (set_gpio_config_.call(srv)) {
+  //   if (srv.response.success) {ROS_INFO("SUCCESS!");} else {ROS_WARN("NAY!");}
+  // } else { ROS_ERROR("Failed to call set gpio service!"); }
 }
 
 bool MartyCore::setFallDetector(std_srvs::SetBool::Request&  req,
