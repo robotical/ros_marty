@@ -518,6 +518,7 @@ void CmdServer::waitForCmd() {
     }
     close(clisock);
   } else if (ros_cmd_) {
+    robot_->enableRobot();
     runCommand(cmd_data_);
     ros_cmd_ = false;
   }
