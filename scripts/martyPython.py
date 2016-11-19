@@ -6,12 +6,9 @@ import struct
 DEF_HOST = 'localhost'
 DEF_PORT = 1569
 
-# Command definitions, to be sent over network
-# Cmd = Enum('Cmd', """hello movejoint lean walk eyes kick liftleg
-#            lowerleg celebrate dance rollerskate arms demo stop""")
 cmds = {
   "hello": 1,
-  "movejoint:": 2,
+  "movejoint": 2,
   "lean": 3,
   "walk": 4,
   "eyes": 5,
