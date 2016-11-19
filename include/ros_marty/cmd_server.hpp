@@ -26,36 +26,46 @@
 #define DEFAULT_STEPTIME  2.0
 #define DEFAULT_MOVETIME  1.0
 
-#define CMD_LEFT  0
-#define CMD_RIGHT 1
+// #define CMD_LEFT  0
+// #define CMD_RIGHT 1
 
-#define CMD_FORWARD   0
-#define CMD_BACKWARD  1
+// #define CMD_FORWARD   0
+// #define CMD_BACKWARD  1
 
 #define CMD_POSITIVE  0
 #define CMD_NEGATIVE  1
 
-#define w_before 100
-#define w_after 0
+#define w_before 150
+#define w_after 150
 
 /**
  * @brief      Add new commands here for the server to receive
  */
+enum Direction {
+  CMD_LEFT = 0,
+  CMD_RIGHT,
+  CMD_FORW,
+  CMD_BACK
+};
+
+enum Joint {
+  J_HIP = 0,
+  J_TWIST,
+  J_KNEE,
+  J_LEG
+};
+
 enum Commands {
-  CMD_HELLO = 0,
-  CMD_MOVEKNEE,       // TODO: Move individual motor is 1 command
-  CMD_MOVEHIP,
-  CMD_LEANSAGITTAL,   // TODO: Lean in 4 directions is 1 command
-  CMD_LEANSIDEWAYS,
-  CMD_STEP,           // TODO: NOT IMPLEMENTED?
+  CMD_HELLO = 1,
+  CMD_MOVEJOINT,
+  CMD_LEAN,
   CMD_WALK,
   CMD_EYES,
   CMD_KICK,
-  CMD_MOVEJOINTS,     // TODO: NOT IMPLEMENTED?
   CMD_LIFTLEG,
   CMD_LOWERLEG,
   CMD_CELEBRATE,
-  CMD_HIPTOBESQUARE,
+  CMD_DANCE,
   CMD_ROLLERSKATE,
   CMD_ARMS,
   CMD_DEMO,
@@ -72,21 +82,22 @@ class CmdServer {
  private:
   // Methods
   void runCommand(vector<int> data);
-  void hello();
-  void walk(vector<int> data);
-  void kick(vector<int> data);
-  void eyes(vector<int> data);
-  void moveKnee(vector<int> data); // TODO: Make moveJoint
-  void moveHip(vector<int> data); // TODO: Make moveJoint
-  void leanSagittal(vector<int> data); // TODO: Make lean
-  void leanSideways(vector<int> data); // TODO: Make lean
+  void runSockCommand(vector<int8_t> data);
+
+  void arms(int r_angle = 0, int l_angle = 0);
   void celebrate();
-  void liftLeg(vector<int> data);
-  void lowerLeg(vector<int> data);
-  void dance(vector<int> data);
-  void arms(vector<int> data);
+  void dance(int robot_id);
   void demo();
+  void eyes(int amount = 0, int amount2 = 0);
+  void hello();
+  void kick(int side = CMD_LEFT, int move_time = 3000);
+  void lean(int dir, int amount = 100, int move_time = 2000);
+  void liftLeg(int leg, int amount = 100, int move_time = 2000);
+  void moveJoint(int side, int joint, int amount, int movetime = 2000);
+  void lowerLeg(int move_time = 1000);
   void stopRobot();
+  void walk(int num_steps = 2, int turn = 0,
+            int move_time = 3000, int step_length = 50);
 
   bool cmd_service(marty_msgs::Command::Request&  req,
                    marty_msgs::Command::Response& res);
@@ -95,10 +106,13 @@ class CmdServer {
   bool busy_;
   bool ros_cmd_;
 
+  // Params
+
   // Variables
   MartyCore* robot_;
   int sock_;
   std::vector<int> cmd_data_;
+  std::vector<std::vector<int> > cmd_queue_;
 
   // ROS
   ros::ServiceServer cmd_srv_;

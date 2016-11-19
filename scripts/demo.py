@@ -2,61 +2,79 @@ import time
 import math
 import martyPython as marty
 
-# Initialise Marty
+## Get Marty ready
 # marty.hello()
-# time.sleep(3.0)
 
-# Example Walk
+## Walking
 NUM_STEPS = 2
-STEP_LENGTH = 50
 TURN = 0      # 0 = Straight, >0 = Right, <0 = Left
-MOVE_TIME = 30
-print "WALKING!"
-# marty.walk(NUM_STEPS, STEP_LENGTH, TURN, MOVE_TIME)
-# marty.walk(NUM_STEPS, STEP_LENGTH, TURN, MOVE_TIME)
-# marty.walk(1, 0, TURN, 50)
-marty.hello()
-# marty.celebrate()
+WALK_TIME = 3000
+STEP_LENGTH = 50
+# marty.walk(NUM_STEPS, TURN, WALK_TIME, STEP_LENGTH)
 
-# TODO: Debug rest of demos when eyes/arms implemented
-
-# for x in range(0,20):
-#     marty.eyes(-60)
-#     marty.arms(100,200)
-#     time.sleep(0.1)
-#     marty.eyes(-40)
-#     marty.arms(200,100)
-#     time.sleep(0.1)
-# marty.arms(200,200)
-
-# marty.walk(NUM_STEPS,50,0,17)
-# marty.walk(1,10,0,13)
-# marty.arms(200,200)
-# time.sleep(NUM_STEPS*1.7 + 6.0)
-# marty.eyes(-60)
-
-# marty.leanForward(50,15)
-# marty.leanForward(0,15)
-# marty.eyes(-80)
-
-## Example Step procedure
-# def step():
-#   marty.standStraight()
-#   marty.leanRight(60)
-#   marty.liftLeftLeg(50)
-#   marty.moveLeftLegForward(50)
-#   marty.lowerLeg()
-#   marty.standStraight()
-#   marty.leanLeft(60)
-#   marty.liftRightLeg(10)
-#   marty.moveRightLegForward(50)
-#   marty.lowerLeg()
-
-# for i in range(5):
-#   step()
-
+## Kicking
+KICK_TIME = 2000
+# marty.kickLeft()
 # marty.kickRight()
-# marty.celebrate()
+# marty.kick("left", KICK_TIME)
 
-## Get Marty back to a standing position
+## Arms
+RIGHT_ARM = 50
+LEFT_ARM = -50
+# marty.arms(RIGHT_ARM, LEFT_ARM)
+
+## Eyes
+# marty.eyes(marty.EYES_WIDE)
+
+## Leaning
+LEAN_AMOUNT = 50
+LEAN_TIME = 2000
+# marty.leanForward()
+# marty.leanBackward()
+# marty.lean("left", LEAN_AMOUNT)
+# marty.lean("right", LEAN_AMOUNT, LEAN_TIME)
 # marty.standStraight()
+
+## Joint Control
+MOVE_AMOUNT = 50
+MOVE_TIME = 1000
+# marty.moveJoint("right", "knee", 40)
+# marty.liftLeftLeg()
+# marty.moveJoint("left", "twist", MOVE_AMOUNT)
+# marty.moveJoint("left", "twist", 0, MOVE_TIME)
+# marty.lowerLeg()
+# marty.standStraight()
+
+## Example Loop
+# for x in range(0,20):
+#     marty.eyes(marty.EYES_EXCITED)
+#     marty.arms(100,0)
+#     time.sleep(0.1)
+#     marty.eyes(marty.EYES_NORMAL)
+#     marty.arms(0,100)
+#     time.sleep(0.1)
+# marty.arms()
+
+## Celebrate!
+#marty.celebrate()
+
+## Example Step function
+# STEP_TIME = 1000
+# def step():
+#     marty.standStraight()
+#     marty.leanRight(60, STEP_TIME)
+#     marty.liftLeftLeg(50, STEP_TIME)
+#     marty.moveLeftLegForward(50, STEP_TIME)
+#     marty.lowerLeg()
+#     marty.standStraight()
+#     marty.leanLeft(60, STEP_TIME)
+#     marty.liftRightLeg(50, STEP_TIME)
+#     marty.moveRightLegForward(50, STEP_TIME)
+#     marty.lowerLeg()
+#     marty.standStraight()
+#
+# for s in xrange(1,2):
+#     step()
+
+## Stop Marty, put this at the end of your script!
+marty.stop()

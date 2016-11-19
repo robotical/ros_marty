@@ -10,16 +10,16 @@ void CmdServer::robotReady() {
   data_t tSetpoints, tInterp;
   deque <float> tline(NUMJOINTS + 1, 0);
   tSetpoints.push_back(tline);
-  setPointsLeanLeft(tSetpoints, 30, 0, 1.0);
-  setPointsLeanRight(tSetpoints, 30, 0, 2.0);
-  setPointsLegsZero(tSetpoints, 1.0);
+  setPointsLeanLeft(tSetpoints, 30, 0.5);
+  setPointsLeanRight(tSetpoints, 30, 1.0);
+  setPointsLegsZero(tSetpoints, 0.5);
   interpTrajectory(tSetpoints, tInterp, 0.05);
   runTrajectory(robot_, tInterp);
 
   sleepms(w_before);
-  robot_->setServoPos(EYES, EYESANGRY);
+  robot_->setServoPos(EYES, EYES_ANGRY);
   sleepms(250);
-  robot_->setServoPos(EYES, EYESNORMAL);
+  robot_->setServoPos(EYES, EYES_NORMAL);
   sleepms(w_after);
   robot_->stopRobot();
 }
@@ -34,21 +34,40 @@ void CmdServer::robotReady() {
  */
 void CmdServer::runCommand(vector<int> data) {
   busy_ = true;
+  ROS_INFO_STREAM("CMD: " << data[0]);
+  // for (int i = 0; i < data.size(); ++i) {
+  //   ROS_INFO_STREAM("CMDData " << i << ": " << data[i]);
+  // }
+  int l = data.size();
   switch (data[0]) {
   case CMD_HELLO: hello(); break;
-  case CMD_MOVEKNEE: moveKnee(data); break;
-  case CMD_MOVEHIP: moveHip(data); break;
-  case CMD_LEANSAGITTAL: leanSagittal(data); break;
-  case CMD_LEANSIDEWAYS: leanSideways(data); break;
-  case CMD_WALK: walk(data); break;
-  case CMD_KICK: kick(data); break;
-  case CMD_EYES: eyes(data); break;
-  case CMD_CELEBRATE: celebrate(); break;
-  case CMD_LIFTLEG: liftLeg(data); break;
-  case CMD_LOWERLEG: lowerLeg(data); break;
-  case CMD_HIPTOBESQUARE: dance(data); break;
+  case CMD_MOVEJOINT:
+    if (l == 4) {moveJoint(data[1], data[2], data[3]);}
+    if (l == 5) {moveJoint(data[1], data[2], data[3], data[4]);} break;
+  case CMD_LEAN:
+    if (l == 3) {lean(data[1], data[2]);}
+    if (l == 4) {lean(data[1], data[2]), data[3];} break;
+  case CMD_WALK:
+    if (l == 2) {walk(data[1]);} if (l == 3) {walk(data[1], data[2]);}
+    if (l == 4) {walk(data[1], data[2], data[3]);}
+    if (l == 5) {walk(data[1], data[2], data[3], data[4]);} break;
+  case CMD_KICK:
+    if (l == 2) {kick(data[1]);} if (l == 3) {kick(data[1], data[2]);} break;
+  case CMD_EYES:
+    if (l == 1) {eyes();} if (l == 2) {eyes(data[1]);}
+    if (l == 3) {eyes(data[1], data[2]);} break;
+  case CMD_CELEBRATE:
+    celebrate(); break;
+  case CMD_LIFTLEG:
+    if (l == 2) {liftLeg(data[1]);} if (l == 3) {liftLeg(data[1], data[2]);}
+    if (l == 4) {liftLeg(data[1], data[2], data[3]);} break;
+  case CMD_LOWERLEG:
+    if (l == 2) {lowerLeg(data[1]);} break;
+  case CMD_DANCE:
+    dance(data[1]); break;
   case CMD_ROLLERSKATE: rollerSkate(robot_); break;
-  case CMD_ARMS: arms(data); break;
+  case CMD_ARMS:
+    if (l == 2) {arms(data[1]);} if (l == 3) {arms(data[1], data[2]);} break;
   case CMD_DEMO: demo(); break;
   case CMD_STOP: stopRobot(); break;
   default:
@@ -57,57 +76,58 @@ void CmdServer::runCommand(vector<int> data) {
   busy_ = false;
 }
 
-void CmdServer::hello() {
-  data_t tInterp;
-  tInterp = genReturnToZero(robot_, 1.5);
-  runTrajectory(robot_, tInterp);
-  sleepms(w_before);
-  robot_->setServoPos(EYES, EYESWIDE);
-  sleepms(1000);
-  robot_->setServoPos(EYES, EYESNORMAL);
-  sleepms(w_after);
-}
-
-void CmdServer::walk(vector<int> data) {
-  data_t tInterp;
-  float steptime = DEFAULT_STEPTIME;
-  // if (data.size() < 6) return -1;
-  // check to see if steptime has been specified,
-  // if so then change to seconds and set
-  if (data.size() >= 7) { steptime = (float)data[6] / 10; }
-  uint8_t numsteps = data[1];
-  int walkDir = 1;
-  if (data[2] == CMD_BACKWARD)
-    walkDir = -1;
-  uint8_t stepLength = data[3];
-  int turnDir = 1;
-  if (data[4] == CMD_RIGHT)
-    turnDir = -1;
-  uint8_t turn = data[5];
-  uint8_t whichFoot = 0;
-  if (robot_->jangles_[RHIP] < robot_->jangles_[LHIP])
-    whichFoot = 1;
-  if (walkDir < 0)
-    whichFoot = (whichFoot + 1) % 2;
-  for (int stepnum = 0; stepnum < numsteps; stepnum++) {
-    if (whichFoot) {
-      tInterp = genStepLeft(robot_, walkDir * stepLength,
-                            turnDir * turn, steptime, 0);
-    } else {
-      tInterp = genStepRight(robot_, walkDir * stepLength,
-                             turnDir * turn, steptime, 0);
+void CmdServer::runSockCommand(vector<int8_t> data) {
+  if ((data.size() % 4) != 0) {ROS_ERROR("Data Package wrong size!");} else {
+    vector<int> cmd_data;
+    for (int i = 0; i < (data.size() / 4); ++i) {
+      // ROS_INFO_STREAM("Data " << i << ": " << (int)data[i]);
+      cmd_data.push_back(0);
+      memcpy(&cmd_data[i], &data[(i * 4)], 4);
+      // ROS_INFO_STREAM("NewData " << cmd_data[i]);
     }
-    runTrajectory(robot_, tInterp);
-    whichFoot++;
-    whichFoot %= 2;
+    // if (busy_) {ROS_INFO("BUSY!");} else {ROS_INFO("NOT BUSY!");}
+    if (!busy_) { runCommand(cmd_data); }
+    else { cmd_queue_.push_back(cmd_data); }
   }
 }
 
-void CmdServer::kick(vector<int> data) {
+void CmdServer::hello() {
   data_t tInterp;
-  float kicktime = DEFAULT_STEPTIME;
-  if (data.size() >= 3) { kicktime = (float)data[2] / 10; }
-  if (data[1] == CMD_LEFT) {
+  // Return body to center
+  tInterp = genReturnToZero(robot_, 1.5);
+  runTrajectory(robot_, tInterp);
+  // Move eyes
+  sleepms(w_before);
+  robot_->setServoPos(EYES, EYES_WIDE);
+  sleepms(500);
+  robot_->setServoPos(EYES, EYES_NORMAL);
+  sleepms(w_after);
+}
+
+void CmdServer::walk(int num_steps, int turn, int move_time, int step_length) {
+  data_t tInterp;
+  float step_time = move_time / 1000; // Float in seconds
+  bool leftFoot = false;
+  // Step with left foot if LHip is ahead
+  if (robot_->jangles_[RHIP] < robot_->jangles_[LHIP]) { leftFoot = true; }
+  // Invert if walking backwards
+  if (step_length < 0) { leftFoot = !leftFoot; }
+  // Start walking!
+  for (int step_num = 0; step_num < num_steps; step_num++) {
+    if (leftFoot) {
+      tInterp = genStepLeft(robot_, step_length, turn, step_time, 0);
+    } else {
+      tInterp = genStepRight(robot_, step_length, turn, step_time, 0);
+    }
+    runTrajectory(robot_, tInterp);
+    leftFoot = !leftFoot;
+  }
+}
+
+void CmdServer::kick(int side, int move_time) {
+  data_t tInterp;
+  float kicktime = move_time / 1000;
+  if (side == CMD_LEFT) {
     tInterp = genKickLeft(robot_, kicktime);
   } else {
     tInterp = genKickRight(robot_, kicktime);
@@ -115,106 +135,54 @@ void CmdServer::kick(vector<int> data) {
   runTrajectory(robot_, tInterp);
 }
 
-void CmdServer::eyes(vector<int> data) {
-  // if (data.size() < 3) return -1;
-  float angle = data[2];
-  if (data[1] == CMD_NEGATIVE)
-    angle *= -1;
-  robot_->setServo(EYES, angle);
-  if (data.size() >= 5) {
-    angle = data[4];
-    if (data[3] == CMD_NEGATIVE)
-    {angle *= -1;}
-  }
+void CmdServer::eyes(int amount, int amount2) {
+  robot_->setServoPos(EYES, amount);
 }
 
-void CmdServer::moveKnee(vector<int> data) {
+void CmdServer::moveJoint(int side, int joint, int amount, int move_time) {
   data_t tSetpoints, tInterp;
-  deque<float> tline(robot_->jangles_);
-  tline.push_front(0);
-  float movetime = DEFAULT_MOVETIME;
-  if (data.size() >= 5) movetime = (float)data[4] / 10;
-
-  float angle = (float)data[3];
-  if (data[2] == CMD_NEGATIVE) angle *= -1;
-
-  // Generate a trajectory to move the knee
+  deque<float> tline(robot_->jangles_); tline.push_front(0);
+  // Generate a trajectory to move the joint
   // first line is the robot's present position
-  tSetpoints.clear();
-  tSetpoints.push_back(tline);
-  // tline should already have one line, with 0.0 timecode and robot's present angles
-  if (data[1] == CMD_LEFT) {
-    tline[1 + LKNEE] = angle;
-  } else if (data[1] == CMD_RIGHT) {
-    tline[1 + RKNEE] = angle;
+  tSetpoints.clear(); tSetpoints.push_back(tline);
+  if (joint == J_HIP) {
+    if (side == CMD_LEFT) {
+      tline[1 + LHIP] = (float)amount;
+    } else if (side == CMD_RIGHT) {
+      tline[1 + RHIP] = (float)amount;
+    }
+  } else if (joint == J_TWIST) {
+    if (side == CMD_LEFT) {
+      tline[1 + LTWIST] = (float)amount;
+    } else if (side == CMD_RIGHT) {
+      tline[1 + RTWIST] = (float)amount;
+    }
+  } else if (joint == J_KNEE) {
+    if (side == CMD_LEFT) {
+      tline[1 + LKNEE] = (float)amount;
+    } else if (side == CMD_RIGHT) {
+      tline[1 + RKNEE] = (float)amount;
+    }
+  } else if (joint == J_LEG) {
+    if (side == CMD_LEFT) {
+      tline[1 + LHIP] = (float)amount;
+    } else if (side == CMD_RIGHT) {
+      tline[1 + RHIP] = (float)amount;
+    }
   }
-  tline[0] = movetime;
-  tSetpoints.push_back(tline);
-
-  interpTrajectory(tSetpoints, tInterp, 0.05);
-  runTrajectory(robot_, tInterp);
+  tline[0] = move_time / 1000; tSetpoints.push_back(tline);
+  interpTrajectory(tSetpoints, tInterp, 0.05); runTrajectory(robot_, tInterp);
 }
 
-void CmdServer::moveHip(vector<int> data) {
-  data_t tSetpoints, tInterp;
-  deque<float> tline(robot_->jangles_);
-  tline.push_front(0);
-  float movetime = DEFAULT_MOVETIME;
-  if (data.size() >= 5) movetime = (float)data[4] / 10;
-
-  float angle = (float)data[3];
-  if (data[2] == CMD_NEGATIVE) angle *= -1;
-
-  tSetpoints.clear();
-  tSetpoints.push_back(tline);
-  if (data[1] == CMD_LEFT) {
-    tline[1 + LHIP] = angle;
-  } else if (data[1] == CMD_RIGHT) {
-    tline[1 + RHIP] = angle;
-  }
-  tline[0] = movetime;
-  tSetpoints.push_back(tline);
-
-  interpTrajectory(tSetpoints, tInterp, 0.05);
-  runTrajectory(robot_, tInterp);
-}
-
-void CmdServer::leanSagittal(vector<int> data) {
-  data_t tSetpoints, tInterp;
-  deque<float> tline(robot_->jangles_);
-  tline.push_front(0);
-  float leanamount = data[2];
-  float movetime = DEFAULT_MOVETIME;
-  if (data.size() >= 4) { movetime = data[3] / 10; }
-
-  tSetpoints.push_back(tline);
-  if (data[1] == CMD_FORWARD) {
-    setPointsLeanForward(tSetpoints, leanamount, movetime);
-  } else if (data[1] == CMD_BACKWARD) {
-    setPointsLeanBackward(tSetpoints, leanamount, movetime);
-  }
-
-  interpTrajectory(tSetpoints, tInterp, 0.05);
-  runTrajectory(robot_, tInterp);
-}
-
-void CmdServer::leanSideways(vector<int> data) {
-  data_t tSetpoints, tInterp;
-  deque<float> tline(robot_->jangles_);
-  tline.push_front(0);
-  float leanamount = data[2];
-  float movetime = DEFAULT_MOVETIME;
-  if (data.size() >= 4) { movetime = data[3] / 10; }
-
-  tSetpoints.push_back(tline);
-  if (data[1] == CMD_LEFT) {
-    setPointsLeanLeft(tSetpoints, leanamount, 0, movetime);
-  } else if (data[1] == CMD_RIGHT) {
-    setPointsLeanRight(tSetpoints, leanamount, 0, movetime);
-  }
-
-  interpTrajectory(tSetpoints, tInterp, 0.05);
-  runTrajectory(robot_, tInterp);
+void CmdServer::lean(int dir, int amount, int move_time) {
+  data_t tSetpoints, tInterp; deque<float> tline(robot_->jangles_);
+  tline.push_front(0); tSetpoints.push_back(tline);
+  float lean_time = move_time / 1000;
+  if (dir == CMD_LEFT) {setPointsLeanLeft(tSetpoints, amount, lean_time);}
+  if (dir == CMD_RIGHT) {setPointsLeanRight(tSetpoints, amount, lean_time);}
+  if (dir == CMD_FORW) {setPointsLeanForward(tSetpoints, amount, lean_time);}
+  if (dir == CMD_BACK) {setPointsLeanBackward(tSetpoints, amount, lean_time);}
+  interpTrajectory(tSetpoints, tInterp, 0.05); runTrajectory(robot_, tInterp);
 }
 
 void CmdServer::celebrate() {
@@ -223,32 +191,20 @@ void CmdServer::celebrate() {
   runTrajectory(robot_, tInterp);
 }
 
-void CmdServer::liftLeg(vector<int> data) {
-  data_t tSetpoints, tInterp;
-  deque<float> tline(robot_->jangles_);
-  tline.push_front(0);
-  float movetime = DEFAULT_MOVETIME;
-  if (data.size() >= 4) { movetime = (float)data[3] / 10; }
-
-  float angle = (float)data[2];
-
-  // Generate a trajectory to move the knee
-  // First line is the robot's present position
-  tSetpoints.clear();
-  tSetpoints.push_back(tline);
-  // tline should already have one line, with 0.0 timecode and robot's present angles
-  if (data[1] == CMD_LEFT) {
-    tline[1 + LKNEE] = tline[1 + RKNEE] + angle;
-  } else if (data[1] == CMD_RIGHT) {
-    // note the negative for the right knee
-    tline[1 + RKNEE] = tline[1 + LKNEE] - angle;
+// Generate a trajectory to move the knee
+// First line is the robot's present position
+// tline should already have one line,
+// with 0.0 timecode and robot's present angles
+void CmdServer::liftLeg(int leg, int amount, int move_time) {
+  data_t tSetpoints, tInterp; deque<float> tline(robot_->jangles_);
+  tline.push_front(0); tSetpoints.clear(); tSetpoints.push_back(tline);
+  if (leg == CMD_LEFT) {
+    tline[1 + LKNEE] = tline[1 + RKNEE] + (float)amount;
+  } else if (leg == CMD_RIGHT) {
+    tline[1 + RKNEE] = tline[1 + LKNEE] - (float)amount;
   }
-
-  tline[0] = movetime;
-  tSetpoints.push_back(tline);
-
-  interpTrajectory(tSetpoints, tInterp, 0.05);
-  runTrajectory(robot_, tInterp);
+  tline[0] = move_time / 1000; tSetpoints.push_back(tline);
+  interpTrajectory(tSetpoints, tInterp, 0.05); runTrajectory(robot_, tInterp);
 }
 
 // This will lower whichever leg is higher to the ground
@@ -256,14 +212,9 @@ void CmdServer::liftLeg(vector<int> data) {
 // TODO: should consider hip angle too,
 // then adjust knee angle only to get foot to floor
 // This function will never change the sign of the knee angle
-void CmdServer::lowerLeg(vector<int> data) {
-  data_t tSetpoints, tInterp;
-  deque<float> tline(robot_->jangles_);
-  tline.push_front(0);
-  float movetime = DEFAULT_MOVETIME;
-  if (data.size() >= 2) movetime = (float)data[1] / 10;
-  // Save initial position to setpoints
-  tSetpoints.push_back(tline);
+void CmdServer::lowerLeg(int move_time) {
+  data_t tSetpoints, tInterp; deque<float> tline(robot_->jangles_);
+  tline.push_front(0); tSetpoints.push_back(tline);
 
   if (abs(robot_->jangles_[RKNEE]) > abs(robot_->jangles_[LKNEE])) {
     // Right knee is higher than left knee
@@ -279,25 +230,17 @@ void CmdServer::lowerLeg(vector<int> data) {
       tline[1 + LKNEE] = abs(robot_->jangles_[RKNEE]);
     }
   }
-
-  tline[0] = movetime;
-  tSetpoints.push_back(tline);
-
-  interpTrajectory(tSetpoints, tInterp, 0.05);
-  runTrajectory(robot_, tInterp);
+  tline[0] = move_time / 1000; tSetpoints.push_back(tline);
+  interpTrajectory(tSetpoints, tInterp, 0.05); runTrajectory(robot_, tInterp);
 }
 
-void CmdServer::dance(vector<int> data) {
-  int robotID = (int)data[1];
-  if (robotID < 0) robotID = 0; // TODO: Really...
-  if (robotID > 2) robotID = 2;
-  hipToBeSquare(robot_, robotID);
+void CmdServer::dance(int robot_id) {
+  if (robot_id < 0) { robot_id = 0; } if (robot_id > 2) { robot_id = 2; }
+  hipToBeSquare(robot_, robot_id);
 }
 
-void CmdServer::arms(vector<int> data) {
-  float angle1 = data[1];
-  float angle2 = data[2];
-  std::map<int, float> angles = {{RARM, angle1}, {LARM, angle2}};
+void CmdServer::arms(int r_angle, int l_angle) {
+  std::map<int, float> angles = {{RARM, (float)r_angle}, {LARM, (float)l_angle}};
   robot_->setServos(angles);
 }
 
@@ -309,18 +252,18 @@ void CmdServer::demo() {
     angles[i] = robot_->jangles_[i];
   }
   // Default Arm positions
-  robot_->setServo(EYES, EYESNORMAL);
+  robot_->setServo(EYES, EYES_NORMAL);
   sleep(1);
-  robot_->setServo(EYES, EYESANGRY);
+  robot_->setServo(EYES, EYES_ANGRY);
   sleep(1);
-  robot_->setServo(EYES, EYESEXCITED);
+  robot_->setServo(EYES, EYES_EXCITED);
   sleep(1);
-  robot_->setServo(EYES, EYESWIDE);
+  robot_->setServo(EYES, EYES_WIDE);
   sleep(1);
 
   // Test eyes
   for (alpha = 0; alpha < 6.28; alpha += 0.1) {
-    robot_->setServo(EYES, EYESANGRY * sin(alpha));;
+    robot_->setServo(EYES, EYES_ANGRY * sin(alpha));;
     usleep(delay);
   }
 
@@ -502,7 +445,7 @@ void CmdServer::waitForCmd() {
     int nbytes = read(clisock, buffer, 256);
     if (nbytes > 0) {
       ROS_DEBUG("Data received: %d", buffer[0]);
-      vector<int> dbytes;
+      vector<int8_t> dbytes;
       dbytes.push_back(buffer[0]);
       for (int i = 1; i < nbytes; i++) {
         ROS_DEBUG("\t%d", buffer[i]);
@@ -512,15 +455,20 @@ void CmdServer::waitForCmd() {
       if (robot_->hasFallen()) {
         ROS_WARN("Marty has fallen over! Please pick him up and try again.");
       } else {
-        runCommand(dbytes);
+        runSockCommand(dbytes);
       }
       ROS_DEBUG("Done!\n");
     }
     close(clisock);
   } else if (ros_cmd_) {
     robot_->enableRobot();
-    runCommand(cmd_data_);
+    if (!busy_) { runCommand(cmd_data_); }
+    else { cmd_queue_.push_back(cmd_data_); }
     ros_cmd_ = false;
+  } else if ((!busy_) && (cmd_queue_.size() > 0)) {
+    ROS_INFO_STREAM("RUNNING NEXT CMD: " << cmd_queue_[0][0]);
+    runCommand(cmd_queue_[0]);
+    cmd_queue_.erase(cmd_queue_.begin());
   }
 }
 

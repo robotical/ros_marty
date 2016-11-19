@@ -37,10 +37,8 @@ data_t genRaisedFootTwistLeft(MartyCore* robot, float period);
 data_t genRaisedFootTwistRight(MartyCore* robot, float period);
 data_t genCelebration(MartyCore* robot, float period);
 data_t genReturnToZero(MartyCore* robot, float period);
-bool setPointsLeanLeft(data_t& tSetpoints, int leanAmount, int legLift,
-                       float period);
-bool setPointsLeanRight(data_t& tSetpoints, int leanAmount, int legLift,
-                        float period);
+bool setPointsLeanLeft(data_t& tSetpoints, int leanAmount, float period);
+bool setPointsLeanRight(data_t& tSetpoints, int leanAmount, float period);
 bool setPointsLeanForward(data_t& tSetpoints, int leanAmount, float period);
 bool setPointsLeanBackward(data_t& tSetpoints, int leanAmount, float period);
 bool setPointsLegsZero(data_t& tSetpoints, float period);

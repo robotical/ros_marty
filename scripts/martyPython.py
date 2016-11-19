@@ -1,42 +1,34 @@
+import time
 import socket
-# import sys
-# from time import sleep
+import struct
+from enum import Enum
 
-# Robot Network Info  # TODO: Move to Config file
+# Robot Network Info
 DEF_HOST = 'localhost'
 DEF_PORT = 1569
 
 # Command definitions, to be sent over network
-cmds = {
-  "hello": 0,
-  "moveknee:": 1,
-  "movehip": 2,
-  "leansagittal": 3,
-  "leansideways": 4,
-  "step": 5,
-  "walk": 6,
-  "eyes": 7,
-  "kick": 8,
-  "movejoints": 9,
-  "liftleg": 10,
-  "lowerleg": 11,
-  "celebrate": 12,
-  "hiptobesquare": 13,
-  "rollerskate": 14,
-  "arms": 15,
-  "demo": 16,
-  "stop": 17
-}
+Cmd = Enum('Cmd', """hello movejoint lean walk eyes kick liftleg
+           lowerleg celebrate dance rollerskate arms demo stop""")
 
-encoding = {
-  "left": 0,
-  "right": 1,
-  "forward": 0,
-  "backward": 1,
-  "positive": 0,
-  "negative": 1
-}
+# DEFAULT POSES
+EYES_ANGRY = 80
+EYES_NORMAL = 60
+EYES_EXCITED = 20
+EYES_WIDE = -100
 
+# COMMUNICATION DEFINITIONS
+CMD_LEFT = 0
+CMD_RIGHT = 1
+CMD_FORW = 3
+CMD_BACK = 4
+
+J_HIP = 0
+J_TWIST = 1
+J_KNEE = 2
+J_LEG = 3
+
+# Socket Methods
 def init_socket(host, port=DEF_PORT):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = (host, port)
@@ -45,175 +37,196 @@ def init_socket(host, port=DEF_PORT):
     return sock
 
 def sendCmdSock(sock, cmd, data):
-    dsendlist = [cmd] + data
-    dsend = bytearray(dsendlist)
-    sock.sendall(dsend)
+    print cmd
+    sendlist = struct.pack('<i', cmd)
+    for x in xrange(0,len(data)):
+        sendlist = sendlist + struct.pack('<i', data[x])
+    sock.sendall(sendlist)
     sock.close()
 
 def sendCmd(cmd, data, host=DEF_HOST):
     sock = init_socket(host, DEF_PORT)
     sendCmdSock(sock, cmd, data)
 
-def leanSagittal(amount):
-    if amount < 0:
-        direction = encoding["backward"]
+# Marty Commands
+def arm(side, amount = 0):
+    if (side == "left"):
+        sendCmd(Cmd.arms.value, [CMD_LEFT, amount])
+    elif (side == "right"):
+        sendCmd(Cmd.arms.value, [CMD_RIGHT, amount])
     else:
-        direction = encoding["forward"]
-    amount = abs(amount)
-    if amount > 100:
-        amount = 100
-    sendCmd(cmds["leansagittal"], [direction, amount])
+        print "Error: Please select which arm to move (left or right)"
 
-def leanForward(amount, time=20):
-    if type(amount) != int and type(amount) != float:
-        print "Error: leanForward needs to be sent a number"
-        return False
-    amount = min(abs(int(amount)), 100)
-    sendCmd(cmds["leansagittal"], [encoding["forward"], amount, time])
-    return True
-
-def leanBackward(amount):
-    if type(amount) != int and type(amount) != float:
-        print "Error: leanBackward needs to be sent a number"
-        return False
-    amount = min(abs(int(amount)), 100)
-    sendCmd(cmds["leansagittal"], [encoding["backward"], amount])
-    return True
-
-def leanLeft(amount):
-    if type(amount) != int and type(amount) != float:
-        print "Error: leanLeft needs to be sent a number"
-        return False
-    amount = min(abs(int(amount)), 100)
-    sendCmd(cmds["leansideways"], [encoding["left"], amount])
-    return True
-
-def leanRight(amount):
-    if type(amount) != int and type(amount) != float:
-        print "Error: leanRight needs to be sent a number"
-        return False
-    amount = min(abs(int(amount)), 100)
-    sendCmd(cmds["leansideways"], [encoding["right"], amount])
-    return True
-
-def liftLeg(leg, amount):
-    if type(amount) != int and type(amount) != float:
-        print "Error: liftLeg needs to be sent a number"
-        return False
-    if leg == "left":
-        leg = encoding["left"]
-    elif leg == "right":
-        leg = encoding["right"]
-    if leg != encoding["left"] and leg != encoding["right"]:
-        print "Error: liftleg needs to be send a valid leg"
-        return False
-    amount = min(abs(int(amount)), 100)
-    sendCmd(cmds["liftleg"], [leg, amount])
-
-def liftLeftLeg(amount):
-    return liftLeg(encoding["left"], amount)
-
-def liftRightLeg(amount):
-    return liftLeg(encoding["right"], amount)
-
-def moveHip(leg, amount, movetime=20):
-    if type(amount) != int and type(amount) != float:
-        print "Error: moveHip needs to be sent a number"
-        return False
-    if leg == "left":
-        leg = encoding["left"]
-    elif leg == "right":
-        leg = encoding["right"]
-    if leg != encoding["left"] and leg != encoding["right"]:
-        print "Error: liftleg needs to be send a valid leg"
-        return False
-    if (amount < 0):
-        sign = encoding["negative"]
-    else:
-        sign = encoding["positive"]
-    amount = min(abs(int(amount)), 100)
-    sendCmd(cmds["movehip"], [leg, sign, amount, movetime])
-    return True
-
-def moveLeftHip(amount):    # TODO: Are these commands used / implemented?
-    return moveHip(encoding["left"], amount)
-
-def moveRightHip(amount, movetime=20):
-    return moveHip(encoding["right"], amount, movetime)
-
-def lowerLeg(movetime = 10):
-    return sendCmd(cmds["lowerleg"], [movetime])
-
-def walk(numsteps, stepLength, turn, movetime=20):
-    if stepLength > 0:
-        stepDir = encoding["forward"]
-    else:
-        stepDir = encoding["backward"]
-    if turn > 0:
-        turnDir = encoding["right"]
-    else:
-        turnDir = encoding["left"]
-    stepLength = abs(stepLength)
-    turn = abs(turn)
-    sendCmd(cmds["walk"], [numsteps, stepDir, stepLength, turnDir, turn, movetime])
-
-def eyes(amount, amount2=None):
-    if (amount < 0):
-        sign = encoding["negative"]
-    else:
-        sign = encoding["positive"]
-    amount = min(abs(int(amount)), 100)
-    cmd = [sign, amount]
-    if amount2 != None:
-        if (amount2 < 0):
-            sign = encoding["negative"]
-        else:
-            sign = encoding["positive"]
-        amount2 = min(abs(int(amount2)), 100)
-        cmd = cmd + [sign, amount2]
-    sendCmd(cmds["eyes"], cmd)
-
-def arms(angle1, angle2):
-    sendCmd(cmds["arms"], [angle1, angle2])
-
-def hello():
-    sendCmd(cmds["hello"], [])
-
-def moveRightLegForward(amount, movetime=10):
-    return moveRightHip(0-abs(amount), movetime)
-
-def moveRightLegBackward(amount):
-    return moveRightHip(abs(amount))
-
-def moveLeftLegForward(amount):
-    return moveLeftHip(0-abs(amount))
-
-def moveLeftLegBackward(amount):
-    return moveLeftHip(abs(amount))
-
-def standStraight():
-    leanForward(0)
-    return leanLeft(0)
-
-def kickLeft():
-    return sendCmd(cmds["kick"], [encoding["left"]])
-
-def kickRight():
-    return sendCmd(cmds["kick"], [encoding["right"]])
+def arms(rarm = 0, larm = 0):
+    sendCmd(Cmd.arms.value, [rarm, larm])
 
 def celebrate():
-    return sendCmd(cmds["celebrate"],[])
+    return sendCmd(Cmd.celebrate.value,[])
 
-def hipToBeSquare():
-    sendCmd(cmds["hiptobesquare"], [1], "martyZero")
-    sendCmd(cmds["hiptobesquare"], [0], "marty2")
-    return sendCmd(cmds["hiptobesquare"], [2], "marty4")
-
-def rollerSkate():
-    sendCmd(cmds["rollerskate"], [])
+def dance(robot_name, robot_id = 0):
+    sendCmd(Cmd.dance.value, [robot_id], robot_name)
 
 def demo():
-    sendCmd(cmds["demo"], [])
+    sendCmd(Cmd.demo.value, [])
+
+def eyes(amount = 0, amount2 = 0):
+    sendCmd(Cmd.eyes.value, [amount, amount2])
+
+def hello():
+    sendCmd(Cmd.hello.value, [])
+
+def kick(leg = "left", movetime = 3000):
+    if (leg == "left"):
+        sendCmd(Cmd.kick.value, [CMD_LEFT, movetime])
+    if (leg == "right"):
+        sendCmd(Cmd.kick.value, [CMD_RIGHT, movetime])
+
+def kickLeft(movetime = 3000):
+    kick("left", movetime)
+
+def kickRight(movetime = 3000):
+    kick("right", movetime)
+
+##
+## @brief      Marty leans in any direction
+##
+## @param      direction  Select left, right, forward or backward
+## @param      amount     Positive or negative, between 100 and -100
+## @param      movetime   In milliseconds, recommended 2000
+##
+## @return     Returns False if wrong direction is set
+##
+def lean(direction, amount = 100, movetime = 2000):
+    if direction == "left":
+        sendCmd(Cmd.lean.value, [CMD_LEFT, min(abs(amount), 100), movetime])
+    elif direction == "right":
+        sendCmd(Cmd.lean.value, [CMD_RIGHT, min(abs(amount), 100), movetime])
+    elif direction == "forward":
+        sendCmd(Cmd.lean.value, [CMD_FORW, min(abs(amount), 100), movetime])
+    elif direction == "backward":
+        sendCmd(Cmd.lean.value, [CMD_BACK, min(abs(amount), 100), movetime])
+    else:
+        print "Error: Please write the lean direction (left, right, forward, backward)"
+        return False
+
+def leanLeft(amount = 100, movetime = 2000):
+    lean("left", amount, movetime)
+
+def leanRight(amount = 100, movetime = 2000):
+    lean("right", amount, movetime)
+
+def leanForward(amount = 100, movetime = 2000):
+    lean("forward", amount, movetime)
+
+def leanBackward(amount = 100, movetime = 2000):
+    lean("backward", amount, movetime)
+
+def liftLeg(leg, amount = 100, movetime = 2000):
+    if leg == "left":
+        sendCmd(Cmd.liftleg.value, [CMD_LEFT, min(abs(amount), 100), movetime])
+    elif leg == "right":
+        sendCmd(Cmd.liftleg.value, [CMD_RIGHT, min(abs(amount), 100), movetime])
+    else:
+        print "Error: Please write the leg to lift (left or right)"
+        return False
+
+def liftLeftLeg(amount = 100, movetime = 2000):
+    return liftLeg("left", amount, movetime)
+
+def liftRightLeg(amount = 100, movetime = 2000):
+    return liftLeg("right", amount, movetime)
+
+def lowerLeg(movetime = 1000):
+    return sendCmd(Cmd.lowerleg.value, [movetime])
+
+def moveJoint(side, joint, amount, movetime = 2000):
+    if joint == "hip":
+        if side == "left":
+            sendCmd(Cmd.movejoint.value, [CMD_LEFT, J_HIP, amount, movetime])
+        elif side == "right":
+            sendCmd(Cmd.movejoint.value, [CMD_RIGHT, J_HIP, amount, movetime])
+        else:
+            print "Error: Please select left or right joint"
+            return False
+    elif joint == "twist":
+        if side == "left":
+            sendCmd(Cmd.movejoint.value, [CMD_LEFT, J_TWIST, amount, movetime])
+        elif side == "right":
+            sendCmd(Cmd.movejoint.value, [CMD_RIGHT, J_TWIST, amount, movetime])
+        else:
+            print "Error: Please select left or right joint"
+            return False
+    elif joint == "knee":
+        if side == "left":
+            sendCmd(Cmd.movejoint.value, [CMD_LEFT, J_KNEE, amount, movetime])
+        elif side == "right":
+            sendCmd(Cmd.movejoint.value, [CMD_RIGHT, J_KNEE, amount, movetime])
+        else:
+            print "Error: Please select left or right joint"
+            return False
+    elif joint == "leg":
+        if side == "left":
+            sendCmd(Cmd.movejoint.value, [CMD_LEFT, J_LEG, amount, movetime])
+        elif side == "right":
+            sendCmd(Cmd.movejoint.value, [CMD_RIGHT, J_LEG, amount, movetime])
+        else:
+            print "Error: Please select left or right joint"
+            return False
+    else:
+        print "Error: Please select joint: hip, twist, knee or leg"
+        return False
+
+def moveHip(leg, amount = 100, movetime = 2000):
+    if leg == "left":
+        moveJoint("left", "hip", amount, movetime)
+    elif leg == "right":
+        moveJoint("right", "hip", amount, movetime)
+    else:
+        print "Error: Please select left or right hip"
+        return False
+
+def moveLeftHip(amount = 100, movetime = 2000):
+    moveHip("left", amount, movetime)
+
+def moveRightHip(amount = 100, movetime = 2000):
+    moveHip("right", amount, movetime)
+
+def moveLeg(side, amount = 100, movetime = 2000):
+    if side == "left":
+        moveJoint("left", "leg", amount, movetime)
+    elif side == "right":
+        moveJoint("right", "leg", amount, movetime)
+    else:
+        print "Error: Please select left or right leg"
+        return False
+
+def moveLeftLeg(amount = 100, movetime = 2000):
+    moveLeg("left", amount, movetime)
+
+def moveRightLeg(amount = 100, movetime = 2000):
+    moveLeg("right", amount, movetime)
+
+def moveRightLegForward(amount = 100, movetime = 2000):
+    return moveRightLeg(-amount, movetime)
+
+def moveRightLegBackward(amount = 100, movetime = 2000):
+    return moveRightLeg(amount, movetime)
+
+def moveLeftLegForward(amount = 100, movetime = 2000):
+    return moveLeftLeg(-amount, movetime)
+
+def moveLeftLegBackward(amount = 100, movetime = 2000):
+    return moveLeftLeg(amount, movetime)
+
+def rollerSkate():
+    sendCmd(Cmd.rollerskate.value, [])
+
+def standStraight(movetime = 1000):
+    leanForward(0, movetime)
+    leanLeft(0, movetime)
 
 def stop():
-    sendCmd(cmds["stop"], [])
+    sendCmd(Cmd.stop.value, [])
+
+def walk(numsteps = 2, turn = 0, movetime = 3000, stepLength = 50):
+    sendCmd(Cmd.walk.value, [numsteps, turn, movetime, stepLength])

@@ -433,7 +433,6 @@ data_t Trajectory::genReturnToZero(MartyCore* robot, float period) {
 }
 
 bool Trajectory::setPointsLeanLeft(data_t& tSetpoints, int leanAmount,
-                                   int legLift,
                                    float period) {
   deque <float> tline(tSetpoints.back());
 
@@ -447,7 +446,6 @@ bool Trajectory::setPointsLeanLeft(data_t& tSetpoints, int leanAmount,
 }
 
 bool Trajectory::setPointsLeanRight(data_t& tSetpoints, int leanAmount,
-                                    int legLift,
                                     float period) {
   deque <float> tline(tSetpoints.back());
 
@@ -960,37 +958,37 @@ int Trajectory::hipToBeSquare(MartyCore* robot, int robotID) {
   // lean left, pause, lean right, pause
   for (int i = 0; i < 3; i++) {
     // center
-    setPointsLeanLeft(tLegs, 0, 0, BEAT / 2);
+    setPointsLeanLeft(tLegs, 0, BEAT / 2);
     setPointsArmsUp(tArms, 0, 0, BEAT / 2);
     // lean left and pause
-    setPointsLeanLeft(tLegs, 45, 0, BEAT / 2);
+    setPointsLeanLeft(tLegs, 45, BEAT / 2);
     setPointsArmsUp(tArms, 0, 200, BEAT / 2);
-    setPointsLeanLeft(tLegs, 45, 0, BEAT);
+    setPointsLeanLeft(tLegs, 45, BEAT);
     setPointsArmsUp(tArms, 0, 200, BEAT);
 
     //lean right and pause
-    setPointsLeanLeft(tLegs, 0, 0, BEAT / 2);
+    setPointsLeanLeft(tLegs, 0, BEAT / 2);
     setPointsArmsUp(tArms, 0, 0, BEAT / 2);
-    setPointsLeanRight(tLegs, 45, 0, BEAT / 2);
+    setPointsLeanRight(tLegs, 45, BEAT / 2);
     setPointsArmsUp(tArms, 200, 0, BEAT / 2);
-    setPointsLeanRight(tLegs, 45, 0, BEAT);
+    setPointsLeanRight(tLegs, 45, BEAT);
     setPointsArmsUp(tArms, 200, 0, BEAT);
   }
   setPointsEyes(tEyes, 0, BEAT * 12);
 
   // staggered centering, then all lean left at same time
   if (robotID == 0) {
-    setPointsLeanLeft(tLegs, 0, 0, BEAT);
-    setPointsLeanLeft(tLegs, 0, 0, BEAT * 2);
+    setPointsLeanLeft(tLegs, 0, BEAT);
+    setPointsLeanLeft(tLegs, 0, BEAT * 2);
   } else if (robotID == 1) {
-    setPointsLeanRight(tLegs, 45, 0, BEAT);
-    setPointsLeanLeft(tLegs, 0, 0, BEAT);
-    setPointsLeanLeft(tLegs, 0, 0, BEAT);
+    setPointsLeanRight(tLegs, 45, BEAT);
+    setPointsLeanLeft(tLegs, 0, BEAT);
+    setPointsLeanLeft(tLegs, 0, BEAT);
   } else if (robotID == 2) {
-    setPointsLeanRight(tLegs, 45, 0, BEAT * 2);
-    setPointsLeanLeft(tLegs, 0, 0, BEAT);
+    setPointsLeanRight(tLegs, 45, BEAT * 2);
+    setPointsLeanLeft(tLegs, 0, BEAT);
   }
-  setPointsLeanLeft(tLegs, 45, 0, BEAT);
+  setPointsLeanLeft(tLegs, 45, BEAT);
   setPointsArmsUp(tArms, 0, 0, BEAT * 4);
   setPointsEyes(tEyes, 0, BEAT * 4);
 
@@ -1022,8 +1020,8 @@ int Trajectory::hipToBeSquare(MartyCore* robot, int robotID) {
   setPointsTapFR(tLegs, BEAT * 2);
   setPointsTapMR(tLegs, BEAT * 2);
   setPointsTapMR(tLegs, BEAT * 2);
-  setPointsLeanLeft(tLegs, 0, 0, BEAT);
-  setPointsLeanRight(tLegs, 45, 0, BEAT);
+  setPointsLeanLeft(tLegs, 0, BEAT);
+  setPointsLeanRight(tLegs, 45, BEAT);
   setPointsTapFL(tLegs, BEAT * 2);
   setPointsTapML(tLegs, BEAT * 2);
   setPointsTapBL(tLegs, BEAT * 2);
@@ -1031,8 +1029,8 @@ int Trajectory::hipToBeSquare(MartyCore* robot, int robotID) {
   setPointsTapFL(tLegs, BEAT * 2);
   setPointsTapML(tLegs, BEAT * 2);
   setPointsTapML(tLegs, BEAT * 2);
-  setPointsLeanLeft(tLegs, 0, 0, BEAT);
-  setPointsLeanLeft(tLegs, 0, 0, BEAT);
+  setPointsLeanLeft(tLegs, 0, BEAT);
+  setPointsLeanLeft(tLegs, 0, BEAT);
 
   interpTrajectory(tLegs, tiLegs, 0.05);
   runTrajectory(robot, tiLegs);
@@ -1049,13 +1047,13 @@ int Trajectory::hipToBeSquare(MartyCore* robot, int robotID) {
   genTraj.clear();
 
   for (int i = 0; i < 2; i++) {
-    setPointsLeanLeft(tLegs, 45, 0, BEAT * 4);
+    setPointsLeanLeft(tLegs, 45, BEAT * 4);
     setPointsArmsUp(tArms, 0, 200, BEAT * 4);
-    setPointsLeanRight(tLegs, 45, 0, BEAT * 4);
+    setPointsLeanRight(tLegs, 45, BEAT * 4);
     setPointsArmsUp(tArms, 200, 0, BEAT * 4);
-    setPointsLeanLeft(tLegs, 45, 0, BEAT * 2);
+    setPointsLeanLeft(tLegs, 45, BEAT * 2);
     setPointsArmsUp(tArms, 0, 200, BEAT * 2);
-    setPointsLeanRight(tLegs, 45, 0, BEAT * 2);
+    setPointsLeanRight(tLegs, 45, BEAT * 2);
     setPointsArmsUp(tArms, 200, 0, BEAT * 2);
     if (robotID == 0) {
       setPointsKickOutLeft(tLegs, BEAT * 4);
@@ -1069,9 +1067,9 @@ int Trajectory::hipToBeSquare(MartyCore* robot, int robotID) {
     setPointsArmsUp(tArms, 0, 0, BEAT * 4);
 
     //for (int j=0; j<2; j++){
-    //  setPointsLeanLeft(tLegs, 45, 0, BEAT);
+    //  setPointsLeanLeft(tLegs, 45, BEAT);
     //  setPointsArmsUp(tArms, 0, 200, BEAT);
-    //  setPointsLeanRight(tLegs, 45, 0, BEAT);
+    //  setPointsLeanRight(tLegs, 45, BEAT);
     //  setPointsArmsUp(tArms, 200, 0, BEAT);
     //}
   }
