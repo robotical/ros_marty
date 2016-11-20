@@ -69,6 +69,7 @@ void CmdServer::runCommand(vector<int> data) {
   case CMD_ARMS:
     if (l == 2) {arms(data[1]);} if (l == 3) {arms(data[1], data[2]);} break;
   case CMD_DEMO: demo(); break;
+  case CMD_GET: if (l == 3) {getData(data[1], data[2]);} break;
   case CMD_STOP: stopRobot(); break;
   default:
     ROS_ERROR_STREAM("CmdServer did not recognise command " << data[0]); break;
@@ -137,6 +138,26 @@ void CmdServer::kick(int side, int move_time) {
 
 void CmdServer::eyes(int amount, int amount2) {
   robot_->setServoPos(EYES, amount);
+}
+
+void CmdServer::getData(int sensor, int id) {
+  resp_request_ = true;
+  if (sensor == GET_GPIO) {
+    if ((id >= 8) || (id < 0)) {resp_request_ = false;}
+    else { val_request_ = gpio_data_.gpio[id]; }
+  } else if (sensor == GET_ACCEL) {
+    if (id == AXES_X) { val_request_ = accel_data_.x;}
+    else if (id == AXES_Y) { val_request_ = accel_data_.y;}
+    else if (id == AXES_Z) { val_request_ = accel_data_.z;}
+    else {resp_request_ = false;}
+  } else if (sensor == GET_BATT) {
+    val_request_ = batt_data_.data;
+  } else if (sensor == GET_CURR) {
+    if ((id >= 8) || (id < 0)) {resp_request_ = false;}
+    else { val_request_ = curr_data_.current[id]; }
+  } else {
+    resp_request_ = false;
+  }
 }
 
 void CmdServer::moveJoint(int side, int joint, int amount, int move_time) {
@@ -395,10 +416,15 @@ void CmdServer::init() {
   robot_ = new MartyCore(nh_);
   busy_ = false;
   ros_cmd_ = false;
+  resp_request_ = false;
 }
 
 void CmdServer::rosSetup() {
-  cmd_srv_ = nh_.advertiseService("command", &CmdServer::cmd_service, this);
+  gpio_sub_ = nh_.subscribe("/gpios", 1000, &CmdServer::gpioCB, this);
+  accel_sub_ = nh_.subscribe("/accel", 1000, &CmdServer::accelCB, this);
+  batt_sub_ = nh_.subscribe("/battery", 1000, &CmdServer::battCB, this);
+  curr_sub_ = nh_.subscribe("/motor_currents", 1000, &CmdServer::currCB, this);
+  cmd_srv_ = nh_.advertiseService("/command", &CmdServer::cmd_service, this);
 }
 
 bool CmdServer::cmd_service(marty_msgs::Command::Request&  req,
@@ -462,7 +488,12 @@ void CmdServer::waitForCmd() {
       }
       ROS_DEBUG("Done!\n");
     }
-    write(clisock, resp_msg, strlen(resp_msg));
+    if (resp_request_) {
+      write(clisock, (char*)&val_request_, sizeof(val_request_));
+      resp_request_ = false;
+    } else {
+      write(clisock, resp_msg, strlen(resp_msg));
+    }
     close(clisock);
   } else if (ros_cmd_) {
     robot_->enableRobot();
