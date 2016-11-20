@@ -437,6 +437,7 @@ void CmdServer::stopServer() {
 void CmdServer::waitForCmd() {
   struct sockaddr_in clientaddr;
   char buffer[256];
+  char const* resp_msg = "";
   socklen_t clilen = sizeof(clientaddr);
   int clisock = accept(sock_, (struct sockaddr*) &clientaddr, &clilen);
   if (clisock >= 0) {
@@ -454,11 +455,14 @@ void CmdServer::waitForCmd() {
       ROS_DEBUG("Running Command\n");
       if (robot_->hasFallen()) {
         ROS_WARN("Marty has fallen over! Please pick him up and try again.");
+        resp_msg = "Fallen";
       } else {
         runSockCommand(dbytes);
+        resp_msg = "Success";
       }
       ROS_DEBUG("Done!\n");
     }
+    write(clisock, resp_msg, strlen(resp_msg));
     close(clisock);
   } else if (ros_cmd_) {
     robot_->enableRobot();

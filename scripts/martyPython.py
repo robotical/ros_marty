@@ -54,11 +54,15 @@ def sendCmdSock(sock, cmd, data):
     for x in xrange(0,len(data)):
         sendlist = sendlist + struct.pack('<i', data[x])
     sock.sendall(sendlist)
+    rec_msg = sock.recv(4096)
+    if rec_msg != "Success":
+        print "Warning: Cmd Failed = " + rec_msg
     sock.close()
 
 def sendCmd(cmd, data, host=DEF_HOST):
     sock = init_socket(host, DEF_PORT)
     sendCmdSock(sock, cmd, data)
+    time.sleep(0.02)    # ROS spins at 50Hz
 
 # Marty Commands
 def arm(side, amount = 0):

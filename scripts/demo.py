@@ -46,35 +46,34 @@ MOVE_TIME = 1000
 # marty.standStraight()
 
 ## Example Loop
-# for x in range(0,20):
+# for x in range(0,10):
 #     marty.eyes(marty.EYES_EXCITED)
 #     marty.arms(100,0)
-#     time.sleep(0.1)
 #     marty.eyes(marty.EYES_NORMAL)
 #     marty.arms(0,100)
-#     time.sleep(0.1)
 # marty.arms()
 
-## Celebrate!
-#marty.celebrate()
-
 ## Example Step function
-# STEP_TIME = 1000
+STEP_TIME = 1000
 # def step():
-#     marty.standStraight()
 #     marty.leanRight(60, STEP_TIME)
 #     marty.liftLeftLeg(50, STEP_TIME)
 #     marty.moveLeftLegForward(50, STEP_TIME)
+#     marty.moveRightLegBackward(50, STEP_TIME)
 #     marty.lowerLeg()
-#     marty.standStraight()
 #     marty.leanLeft(60, STEP_TIME)
 #     marty.liftRightLeg(50, STEP_TIME)
 #     marty.moveRightLegForward(50, STEP_TIME)
+#     marty.moveLeftLegBackward(50, STEP_TIME)
 #     marty.lowerLeg()
-#     marty.standStraight()
-#
+
+# marty.standStraight()
 # for s in xrange(1,2):
 #     step()
+# marty.standStraight()
+
+## Celebrate!
+#marty.celebrate()
 
 ## Stop Marty, put this at the end of your script!
 marty.stop()
