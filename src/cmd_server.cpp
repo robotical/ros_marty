@@ -106,7 +106,7 @@ void CmdServer::hello() {
 
 void CmdServer::walk(int num_steps, int turn, int move_time, int step_length) {
   data_t tInterp;
-  float step_time = move_time / 1000; // Float in seconds
+  float step_time = ((float) move_time) / 1000; // Float in seconds
   bool leftFoot = false;
   // Step with left foot if LHip is ahead
   if (robot_->jangles_[RHIP] < robot_->jangles_[LHIP]) { leftFoot = true; }
@@ -126,7 +126,7 @@ void CmdServer::walk(int num_steps, int turn, int move_time, int step_length) {
 
 void CmdServer::kick(int side, int move_time) {
   data_t tInterp;
-  float kicktime = move_time / 1000;
+  float kicktime = ((float)move_time) / 1000;
   if (side == CMD_LEFT) {
     tInterp = genKickLeft(robot_, kicktime);
   } else {
@@ -170,14 +170,14 @@ void CmdServer::moveJoint(int side, int joint, int amount, int move_time) {
       tline[1 + RHIP] = (float)amount;
     }
   }
-  tline[0] = move_time / 1000; tSetpoints.push_back(tline);
+  tline[0] = ((float)move_time) / 1000; tSetpoints.push_back(tline);
   interpTrajectory(tSetpoints, tInterp, 0.05); runTrajectory(robot_, tInterp);
 }
 
 void CmdServer::lean(int dir, int amount, int move_time) {
   data_t tSetpoints, tInterp; deque<float> tline(robot_->jangles_);
   tline.push_front(0); tSetpoints.push_back(tline);
-  float lean_time = move_time / 1000;
+  float lean_time = ((float)move_time) / 1000;
   if (dir == CMD_LEFT) {setPointsLeanLeft(tSetpoints, amount, lean_time);}
   if (dir == CMD_RIGHT) {setPointsLeanRight(tSetpoints, amount, lean_time);}
   if (dir == CMD_FORW) {setPointsLeanForward(tSetpoints, amount, lean_time);}
@@ -203,7 +203,7 @@ void CmdServer::liftLeg(int leg, int amount, int move_time) {
   } else if (leg == CMD_RIGHT) {
     tline[1 + RKNEE] = tline[1 + LKNEE] - (float)amount;
   }
-  tline[0] = move_time / 1000; tSetpoints.push_back(tline);
+  tline[0] = ((float)move_time) / 1000; tSetpoints.push_back(tline);
   interpTrajectory(tSetpoints, tInterp, 0.05); runTrajectory(robot_, tInterp);
 }
 
@@ -230,7 +230,7 @@ void CmdServer::lowerLeg(int move_time) {
       tline[1 + LKNEE] = abs(robot_->jangles_[RKNEE]);
     }
   }
-  tline[0] = move_time / 1000; tSetpoints.push_back(tline);
+  tline[0] = ((float)move_time) / 1000; tSetpoints.push_back(tline);
   interpTrajectory(tSetpoints, tInterp, 0.05); runTrajectory(robot_, tInterp);
 }
 
