@@ -34,7 +34,7 @@ void CmdServer::robotReady() {
  */
 void CmdServer::runCommand(vector<int> data) {
   busy_ = true;
-  ROS_INFO_STREAM("CMD: " << data[0]);
+  // ROS_INFO_STREAM("CMD: " << data[0]);
   // for (int i = 0; i < data.size(); ++i) {
   //   ROS_INFO_STREAM("CMDData " << i << ": " << data[i]);
   // }
@@ -46,7 +46,7 @@ void CmdServer::runCommand(vector<int> data) {
     if (l == 5) {moveJoint(data[1], data[2], data[3], data[4]);} break;
   case CMD_LEAN:
     if (l == 3) {lean(data[1], data[2]);}
-    if (l == 4) {lean(data[1], data[2]), data[3];} break;
+    if (l == 4) {lean(data[1], data[2], data[3]);} break;
   case CMD_WALK:
     if (l == 2) {walk(data[1]);} if (l == 3) {walk(data[1], data[2]);}
     if (l == 4) {walk(data[1], data[2], data[3]);}
