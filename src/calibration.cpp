@@ -35,11 +35,13 @@ void Calibration::init() {
   for (int id = 0; id < NUMJOINTS; ++id) {
     joint.servo_id = id;
     joints_.servo_msg.push_back(joint);
+    cal_vals_.servo_msg.push_back(joint);
   }
   for (int id = 0; id < NUMJOINTS; ++id) {
     int val;
     nh_.param("/marty/" + NAMES[id] + "/zero", val, 0);
     joints_.servo_msg[id].servo_cmd = val;
+    cal_vals_.servo_msg[id].servo_cmd = val;
   }
 }
 
@@ -50,21 +52,18 @@ void Calibration::rosSetup() {
 
 void Calibration::calibrate() {
   CLEAR();
-  INFO("q-a\tw-s\te-d\tr-f\tt-g\ty-h\tz-x\tc-v\tu-j\ti-k\to-l\tENTER to save\n");
-  INFO("LHIP\tLTWIST\tLKNEE\tRHIP\tRTWIST\tRKNEE\tLARM\tRARM\tEYES\tAUX1\tAUX2\t");
+  INFO("  q-a\tw-s\te-d\tr-f\tt-g\ty-h\tz-x\tc-v\tu-j\ti-k\to-l\tENTER to save\n");
+  INFO("  LHIP\tLTWIST\tLKNEE\tRHIP\tRTWIST\tRKNEE\tLARM\tRARM\tEYES\tAUX1\tAUX2\t");
   if (enabled_) { WARN("n - Enabled\n") } else { ERR("n - Disabled\n"); }
-  INFO(int(joints_.servo_msg[LHIP].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[LTWIST].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[LKNEE].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[RHIP].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[RTWIST].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[RKNEE].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[LARM].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[RARM].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[EYES].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[AUX1].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[AUX2].servo_cmd) << "\t");
+  WARN("Old:");
+  for (int id = 0; id < NUMJOINTS; ++id) {
+    INFO(int(cal_vals_.servo_msg[id].servo_cmd) << "\t")
+  }
   WARN("m - Exit" << std::endl);
+  WARN("New:")
+  for (int id = 0; id < NUMJOINTS; ++id) {
+    INFO(int(joints_.servo_msg[id].servo_cmd) << "\t")
+  }
 
   // Publish if Robot is enabled
   std_msgs::Bool enabled;
@@ -145,12 +144,12 @@ void Calibration::writeCalVals() {
     std::string name = NAMES[id];
     int off(0);
     int val = int(joints_.servo_msg[id].servo_cmd);
-    if ((name == "LHIP") or (name == "RHIP")) {off = HIPOFFSET;}
-    else if ((name == "LTWIST") or (name == "RTWIST")) {off = TWISTOFFSET;}
-    else if ((name == "LKNEE") or (name == "RKNEE")) {off = KNEEOFFSET;}
-    else if ((name == "LARM") or (name == "RARM")) {off = ARMOFFSET;}
-    else if (name == "EYES") {off = EYESOFFSET;}
-    else if ((name == "AUX1") or (name == "AUX2")) {off = AUXOFFSET;}
+    if ((name == "LHIP") or (name == "RHIP")) {off = HIP_OFFSET;}
+    else if ((name == "LTWIST") or (name == "RTWIST")) {off = TWIST_OFFSET;}
+    else if ((name == "LKNEE") or (name == "RKNEE")) {off = KNEE_OFFSET;}
+    else if ((name == "LARM") or (name == "RARM")) {off = ARM_OFFSET;}
+    else if (name == "EYES") {off = EYES_OFFSET;}
+    else if ((name == "AUX1") or (name == "AUX2")) {off = AUX_OFFSET;}
     else {WARN("No offset found for joint: " << name << std::endl);}
     of << name << ": {min: " << std::max(val - off, -126) <<
        ", zero: " << val << ", max: " << std::min(val + off, 126) <<

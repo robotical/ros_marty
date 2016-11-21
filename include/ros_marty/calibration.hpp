@@ -57,6 +57,7 @@ class Calibration {
 
 // Variables
   marty_msgs::ServoMsgArray joints_;
+  marty_msgs::ServoMsgArray cal_vals_;
 
 // ROS
   ros::Publisher joint_pub_;

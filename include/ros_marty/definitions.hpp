@@ -97,12 +97,12 @@ const std::map<std::string, int> JOINT_NAMES = {
   {"AUX2", AUX2}
 };
 
-# define HIPOFFSET 100
-# define TWISTOFFSET 110
-# define KNEEOFFSET 110
-# define ARMOFFSET 300
-# define EYESOFFSET 300
-# define AUXOFFSET 110
+# define HIP_OFFSET 100
+# define TWIST_OFFSET 110
+# define KNEE_OFFSET 110
+# define ARM_OFFSET 300
+# define EYES_OFFSET 300
+# define AUX_OFFSET 110
 
 // TODO: These should not be definitions, but in joint calibration as rosparams!
 #define EYES_ANGRY   80
