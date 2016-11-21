@@ -190,6 +190,14 @@ void CmdServer::moveJoint(int side, int joint, int amount, int move_time) {
     } else if (side == CMD_RIGHT) {
       tline[1 + RHIP] = (float)amount;
     }
+  } else if (joint == J_ARM) {
+    if (side == CMD_LEFT) {
+      tline[1 + LARM] = (float)amount;
+    } else if (side == CMD_RIGHT) {
+      tline[1 + RARM] = (float)amount;
+    }
+  } else if (joint == J_EYES) {
+    tline[1 + EYES] = (float)amount;
   }
   tline[0] = ((float)move_time) / 1000; tSetpoints.push_back(tline);
   interpTrajectory(tSetpoints, tInterp, 0.05); runTrajectory(robot_, tInterp);

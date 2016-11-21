@@ -64,7 +64,9 @@ enum Joint {
   J_HIP = 0,
   J_TWIST,
   J_KNEE,
-  J_LEG
+  J_LEG,
+  J_ARM,
+  J_EYES
 };
 
 enum Commands {
