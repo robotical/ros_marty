@@ -27,72 +27,72 @@
 inline void sleepms(int ms) {usleep(ms * 1000);}
 
 enum JOINTS {
-  RHIP = 0,
-  RTWIST,
-  RKNEE,
-  LHIP,
+  LHIP = 0,
   LTWIST,
   LKNEE,
-  EYES,
-  RARM,
+  RHIP,
+  RTWIST,
+  RKNEE,
   LARM,
+  RARM,
+  EYES,
   AUX1,
   AUX2,
   NUMJOINTS // Number of Joints, Leave at the end!
 };
 
 const std::vector <std::string> NAMES = {
-  "RHIP",
-  "RTWIST",
-  "RKNEE",
   "LHIP",
   "LTWIST",
   "LKNEE",
-  "EYES",
-  "RARM",
+  "RHIP",
+  "RTWIST",
+  "RKNEE",
   "LARM",
+  "RARM",
+  "EYES",
   "AUX1",
   "AUX2"
 };
 
 const std::vector <int> JOINT_DIR = {
-  1,  //   "RHIP",
-  1,  //   "RTWIST",
-  -1,  //   "RKNEE",
   1,  //   "LHIP",
   1,  //   "LTWIST",
   -1,  //   "LKNEE",
-  1,  //   "EYES",
-  -1,  //   "RARM",
+  1,  //   "RHIP",
+  1,  //   "RTWIST",
+  -1,  //   "RKNEE",
   1,  //   "LARM",
+  -1,  //   "RARM",
+  1,  //   "EYES",
   1,  //   "AUX1",
   1   //   "AUX2"
 };
 
 const std::vector <int> JOINT_MULT = {
-  1,  //   "RHIP",
-  1,  //   "RTWIST",
-  1,  //   "RKNEE",
   1,  //   "LHIP",
   1,  //   "LTWIST",
   1,  //   "LKNEE",
-  1,  //   "EYES",
-  2,  //   "RARM",
+  1,  //   "RHIP",
+  1,  //   "RTWIST",
+  1,  //   "RKNEE",
   2,  //   "LARM",
+  2,  //   "RARM",
+  1,  //   "EYES",
   1,  //   "AUX1",
   1   //   "AUX2"
 };
 
 const std::map<std::string, int> JOINT_NAMES = {
-  {"RHIP", RHIP},
-  {"RTWIST", RTWIST},
-  {"RKNEE", RKNEE},
   {"LHIP", LHIP},
   {"LTWIST", LTWIST},
   {"LKNEE", LKNEE},
-  {"EYES", EYES},
-  {"RARM", RARM},
+  {"RHIP", RHIP},
+  {"RTWIST", RTWIST},
+  {"RKNEE", RKNEE},
   {"LARM", LARM},
+  {"RARM", RARM},
+  {"EYES", EYES},
   {"AUX1", AUX1},
   {"AUX2", AUX2}
 };
