@@ -57,7 +57,7 @@ void CmdServer::runCommand(vector<int> data) {
     if (l == 1) {eyes();} if (l == 2) {eyes(data[1]);}
     if (l == 3) {eyes(data[1], data[2]);} break;
   case CMD_CELEBRATE:
-    celebrate(); break;
+    if (l == 2) {celebrate(data[1]);} break;
   case CMD_LIFTLEG:
     if (l == 2) {liftLeg(data[1]);} if (l == 3) {liftLeg(data[1], data[2]);}
     if (l == 4) {liftLeg(data[1], data[2], data[3]);} break;
@@ -214,9 +214,9 @@ void CmdServer::lean(int dir, int amount, int move_time) {
   interpTrajectory(tSetpoints, tInterp, 0.05); runTrajectory(robot_, tInterp);
 }
 
-void CmdServer::celebrate() {
+void CmdServer::celebrate(int move_time) {
   data_t tInterp;
-  tInterp = genCelebration(robot_, 4.0);
+  tInterp = genCelebration(robot_, ((float)move_time) / 1000);
   runTrajectory(robot_, tInterp);
 }
 
@@ -435,7 +435,7 @@ void CmdServer::rosSetup() {
   cmd_srv_ = nh_.advertiseService("/command", &CmdServer::cmd_service, this);
 }
 
-bool CmdServer::cmd_service(marty_msgs::Command::Request&  req,
+bool CmdServer::cmd_service(marty_msgs::Command::Request& req,
                             marty_msgs::Command::Response& res) {
   if (!busy_) { ros_cmd_ = true; cmd_data_ = req.data; res.success = true; }
   else { res.success = false; }

@@ -107,7 +107,7 @@ class CmdServer {
   void runSockCommand(vector<int8_t> data);
 
   void arms(int r_angle = 0, int l_angle = 0);
-  void celebrate();
+  void celebrate(int move_time = 4000);
   void dance(int robot_id);
   void demo();
   void eyes(int amount = 0, int amount2 = 0);

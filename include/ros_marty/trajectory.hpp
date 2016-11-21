@@ -35,7 +35,7 @@ data_t genKickRight(MartyCore* robot, float period);
 data_t genGetUp(MartyCore* robot);
 data_t genRaisedFootTwistLeft(MartyCore* robot, float period);
 data_t genRaisedFootTwistRight(MartyCore* robot, float period);
-data_t genCelebration(MartyCore* robot, float period);
+data_t genCelebration(MartyCore* robot, float move_time);
 data_t genReturnToZero(MartyCore* robot, float period);
 bool setPointsLeanLeft(data_t& tSetpoints, int leanAmount, float period);
 bool setPointsLeanRight(data_t& tSetpoints, int leanAmount, float period);
