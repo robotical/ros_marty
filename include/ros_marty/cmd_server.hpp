@@ -55,7 +55,7 @@ enum Direction {
 };
 
 enum Axis {
-  AXES_X = 1,
+  AXES_X = 0,
   AXES_Y,
   AXES_Z
 };
@@ -70,7 +70,7 @@ enum Joint {
 };
 
 enum Commands {
-  CMD_HELLO = 1,
+  CMD_HELLO = 0,
   CMD_MOVEJOINT,
   CMD_LEAN,
   CMD_WALK,
@@ -88,7 +88,7 @@ enum Commands {
 };
 
 enum Sensors {
-  GET_GPIO = 1,
+  GET_GPIO = 0,
   GET_ACCEL,
   GET_BATT,
   GET_CURR
