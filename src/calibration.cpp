@@ -17,36 +17,32 @@ Calibration::Calibration(ros::NodeHandle& nh) : nh_(nh) {
 }
 
 Calibration::~Calibration() {
-  ros::param::del("calibrate");
+  ros::param::del("/marty");
 }
 
 void Calibration::loadParams() {
-  nh_.param("calibrated", calibrated_, false);
+  nh_.param("/marty/calibrated", calibrated_, false);
   if (!calibrated_) {
     WARN("Marty has not been calibrated before!" << std::endl);
   }
 }
 
 void Calibration::init() {
-  saving_ = false;
   enabled_ = true;
+  saving_ = false;
+  exiting_ = false;
   marty_msgs::ServoMsg joint;
   for (int id = 0; id < NUMJOINTS; ++id) {
     joint.servo_id = id;
     joints_.servo_msg.push_back(joint);
+    cal_vals_.servo_msg.push_back(joint);
   }
-  // ROS_INFO_STREAM("RHIP" << JOINT_NAMES[RHIP] << std::endl);
-  int v;
-  nh_.param("LHIP/zero", v, 0); joints_.servo_msg[LHIP].servo_cmd = v;
-  nh_.param("LTWIST/zero", v, 0); joints_.servo_msg[LTWIST].servo_cmd = v;
-  nh_.param("LKNEE/zero", v, 0); joints_.servo_msg[LKNEE].servo_cmd = v;
-  nh_.param("RHIP/zero", v, 0); joints_.servo_msg[RHIP].servo_cmd = v;
-  nh_.param("RTWIST/zero", v, 0); joints_.servo_msg[RTWIST].servo_cmd = v;
-  nh_.param("RKNEE/zero", v, 0); joints_.servo_msg[RKNEE].servo_cmd = v;
-  nh_.param("RARM/zero", v, 0); joints_.servo_msg[RARM].servo_cmd = v;
-  nh_.param("EYES/zero", v, 0); joints_.servo_msg[EYES].servo_cmd = v;
-  nh_.param("AUX1/zero", v, 0); joints_.servo_msg[AUX1].servo_cmd = v;
-  nh_.param("AUX2/zero", v, 0); joints_.servo_msg[AUX2].servo_cmd = v;
+  for (int id = 0; id < NUMJOINTS; ++id) {
+    int val;
+    nh_.param("/marty/" + NAMES[id] + "/zero", val, 0);
+    joints_.servo_msg[id].servo_cmd = val;
+    cal_vals_.servo_msg[id].servo_cmd = val;
+  }
 }
 
 void Calibration::rosSetup() {
@@ -56,114 +52,109 @@ void Calibration::rosSetup() {
 
 void Calibration::calibrate() {
   CLEAR();
-  INFO("q-a\tw-s\te-d\tr-f\tt-g\ty-h\tz-x\tc-v\tu-j\ti-k\to-l\tENTER to save\n");
-  INFO("LHIP\tLTWIST\tLKNEE\tRHIP\tRTWIST\tRKNEE\tLARM\tRARM\tEYES\tAUX1\tAUX2\t");
-  if (enabled_) { INFO("n-Enabled\n") } else { INFO("n-Disabled\n"); }
-  INFO(int(joints_.servo_msg[LHIP].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[LTWIST].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[LKNEE].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[RHIP].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[RTWIST].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[RKNEE].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[LARM].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[RARM].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[EYES].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[AUX1].servo_cmd) << "\t" <<
-       int(joints_.servo_msg[AUX2].servo_cmd) << std::endl);
-
-  // Publish Joint Commands
-  if (enabled_) {
-    joint_pub_.publish(joints_);
+  INFO("  q-a\tw-s\te-d\tr-f\tt-g\ty-h\tz-x\tc-v\tu-j\ti-k\to-l\tENTER to save\n");
+  INFO("  LHIP\tLTWIST\tLKNEE\tRHIP\tRTWIST\tRKNEE\tLARM\tRARM\tEYES\tAUX1\tAUX2\t");
+  if (enabled_) { WARN("n - Enabled\n") } else { ERR("n - Disabled\n"); }
+  WARN("Old:");
+  for (int id = 0; id < NUMJOINTS; ++id) {
+    INFO(int(cal_vals_.servo_msg[id].servo_cmd) << "\t")
   }
+  WARN("m - Exit" << std::endl);
+  WARN("New:")
+  for (int id = 0; id < NUMJOINTS; ++id) {
+    INFO(int(joints_.servo_msg[id].servo_cmd) << "\t")
+  }
+
   // Publish if Robot is enabled
   std_msgs::Bool enabled;
   enabled.data = enabled_;
   enable_pub_.publish(enabled);
+  // Publish Joint Commands
+  if (enabled_) {
+    joint_pub_.publish(joints_);
+  }
 
-  if (!saving_) {
-    if ((c_ = getch())) {
-      if (c_ == 'q') { joints_.servo_msg[LHIP].servo_cmd++; }
-      if (c_ == 'a') { joints_.servo_msg[LHIP].servo_cmd--; }
-      if (c_ == 'w') { joints_.servo_msg[LTWIST].servo_cmd++; }
-      if (c_ == 's') { joints_.servo_msg[LTWIST].servo_cmd--; }
-      if (c_ == 'e') { joints_.servo_msg[LKNEE].servo_cmd++; }
-      if (c_ == 'd') { joints_.servo_msg[LKNEE].servo_cmd--; }
-      if (c_ == 'r') { joints_.servo_msg[RHIP].servo_cmd++; }
-      if (c_ == 'f') { joints_.servo_msg[RHIP].servo_cmd--; }
-      if (c_ == 't') { joints_.servo_msg[RTWIST].servo_cmd++; }
-      if (c_ == 'g') { joints_.servo_msg[RTWIST].servo_cmd--; }
-      if (c_ == 'y') { joints_.servo_msg[RKNEE].servo_cmd++; }
-      if (c_ == 'h') { joints_.servo_msg[RKNEE].servo_cmd--; }
-      if (c_ == 'z') { joints_.servo_msg[LARM].servo_cmd++; }
-      if (c_ == 'x') { joints_.servo_msg[LARM].servo_cmd--; }
-      if (c_ == 'c') { joints_.servo_msg[RARM].servo_cmd++; }
-      if (c_ == 'v') { joints_.servo_msg[RARM].servo_cmd--; }
-      if (c_ == 'u') { joints_.servo_msg[EYES].servo_cmd++; }
-      if (c_ == 'j') { joints_.servo_msg[EYES].servo_cmd--; }
-      if (c_ == 'i') { joints_.servo_msg[AUX1].servo_cmd++; }
-      if (c_ == 'k') { joints_.servo_msg[AUX1].servo_cmd--; }
-      if (c_ == 'o') { joints_.servo_msg[AUX2].servo_cmd++; }
-      if (c_ == 'l') { joints_.servo_msg[AUX2].servo_cmd--; }
-      if (c_ == 'n') { enabled_ = !enabled_; }
-      if (c_ == '\n') { saving_ = true; }
-    }
-    // Make sure they don't go over the limit
-    for (int id = 0; id < NUMJOINTS; ++id) {
-      if (joints_.servo_msg[id].servo_cmd > 126) {
-        joints_.servo_msg[id].servo_cmd = 126;
+  if (!exiting_) {
+    if (!saving_) {
+      if ((c_ = getch())) {
+        ROS_INFO_STREAM("Char: " << c_);
+        ROS_INFO_STREAM("SAVING: " << saving_ << " EXITING: " << exiting_);
+        if (c_ == 'q') { joints_.servo_msg[LHIP].servo_cmd++; }
+        if (c_ == 'a') { joints_.servo_msg[LHIP].servo_cmd--; }
+        if (c_ == 'w') { joints_.servo_msg[LTWIST].servo_cmd++; }
+        if (c_ == 's') { joints_.servo_msg[LTWIST].servo_cmd--; }
+        if (c_ == 'e') { joints_.servo_msg[LKNEE].servo_cmd++; }
+        if (c_ == 'd') { joints_.servo_msg[LKNEE].servo_cmd--; }
+        if (c_ == 'r') { joints_.servo_msg[RHIP].servo_cmd++; }
+        if (c_ == 'f') { joints_.servo_msg[RHIP].servo_cmd--; }
+        if (c_ == 't') { joints_.servo_msg[RTWIST].servo_cmd++; }
+        if (c_ == 'g') { joints_.servo_msg[RTWIST].servo_cmd--; }
+        if (c_ == 'y') { joints_.servo_msg[RKNEE].servo_cmd++; }
+        if (c_ == 'h') { joints_.servo_msg[RKNEE].servo_cmd--; }
+        if (c_ == 'z') { joints_.servo_msg[LARM].servo_cmd++; }
+        if (c_ == 'x') { joints_.servo_msg[LARM].servo_cmd--; }
+        if (c_ == 'c') { joints_.servo_msg[RARM].servo_cmd++; }
+        if (c_ == 'v') { joints_.servo_msg[RARM].servo_cmd--; }
+        if (c_ == 'u') { joints_.servo_msg[EYES].servo_cmd++; }
+        if (c_ == 'j') { joints_.servo_msg[EYES].servo_cmd--; }
+        if (c_ == 'i') { joints_.servo_msg[AUX1].servo_cmd++; }
+        if (c_ == 'k') { joints_.servo_msg[AUX1].servo_cmd--; }
+        if (c_ == 'o') { joints_.servo_msg[AUX2].servo_cmd++; }
+        if (c_ == 'l') { joints_.servo_msg[AUX2].servo_cmd--; }
+        if (c_ == 'n') { enabled_ = !enabled_; }
+        if (c_ == '\n') { saving_ = true; }
+        if (c_ == 'm') { exiting_ = true; }
       }
-      if (joints_.servo_msg[id].servo_cmd < -126) {
-        joints_.servo_msg[id].servo_cmd = -126;
+      // Make sure the joint values do not go over the limit
+      for (int id = 0; id < NUMJOINTS; ++id) {
+        joints_.servo_msg[id].servo_cmd =
+          std::min(int(joints_.servo_msg[id].servo_cmd), 126);
+        joints_.servo_msg[id].servo_cmd =
+          std::max(int(joints_.servo_msg[id].servo_cmd), -126);
+      }
+    } else {
+      WARN("Are you sure you wish to save these values? (y/n) ");
+      if ((c_ = getch())) {
+        if (c_ == 'y') {
+          this->writeCalVals();
+          INFO("Saved!\n");
+          ros::shutdown();
+        } else { saving_ = false; }
       }
     }
   } else {
-    INFO("Are you sure you wish to save these values? (y/n) ");
-    c_ = getchar();
-    if (c_ == 'y') {
-      this->writeCalVals();
-      INFO("Saved!\n");
-      ros::shutdown();
-    } else { saving_ = false; }
+    WARN("Are you sure you want to exit? (y/n) ");
+    if ((c_ = getch())) {
+      if (c_ == 'y') {
+        INFO("Exiting!\n");
+        ros::shutdown();
+      } else { exiting_ = false; }
+    }
   }
 }
 
 void Calibration::writeCalVals() {
   std::string path = ros::package::getPath("ros_marty");
   std::ofstream of (path + "/cfg/joint_calib.cfg");
-  of << "calibrated: true\n" << std::endl;
-  of << "RHIP: {min: " << joints_.servo_msg[RHIP].servo_cmd - HIPOFFSET <<
-     ", zero: " << int(joints_.servo_msg[RHIP].servo_cmd) <<
-     ", max: " << joints_.servo_msg[RHIP].servo_cmd + HIPOFFSET << "}\n";
-  of << "RTWIST: {min: " << joints_.servo_msg[RTWIST].servo_cmd - TWISTOFFSET <<
-     ", zero: " << int(joints_.servo_msg[RTWIST].servo_cmd) <<
-     ", max: " << joints_.servo_msg[RTWIST].servo_cmd + TWISTOFFSET << "}\n";
-  of << "RKNEE: {min: " << joints_.servo_msg[RKNEE].servo_cmd - KNEEOFFSET <<
-     ", zero: " << int(joints_.servo_msg[RKNEE].servo_cmd) <<
-     ", max: " << joints_.servo_msg[RKNEE].servo_cmd + KNEEOFFSET << "}\n";
-  of << "LHIP: {min: " << joints_.servo_msg[LHIP].servo_cmd - HIPOFFSET <<
-     ", zero: " << int(joints_.servo_msg[LHIP].servo_cmd) <<
-     ", max: " << joints_.servo_msg[LHIP].servo_cmd + HIPOFFSET << "}\n";
-  of << "LTWIST: {min: " << joints_.servo_msg[LTWIST].servo_cmd - TWISTOFFSET <<
-     ", zero: " << int(joints_.servo_msg[LTWIST].servo_cmd) <<
-     ", max: " << joints_.servo_msg[LTWIST].servo_cmd + TWISTOFFSET << "}\n";
-  of << "LKNEE: {min: " << joints_.servo_msg[LKNEE].servo_cmd - KNEEOFFSET <<
-     ", zero: " << int(joints_.servo_msg[LKNEE].servo_cmd) <<
-     ", max: " << joints_.servo_msg[LKNEE].servo_cmd + KNEEOFFSET << "}\n";
-  of << "EYES: {min: " << joints_.servo_msg[EYES].servo_cmd - EYESOFFSET <<
-     ", zero: " << int(joints_.servo_msg[EYES].servo_cmd) <<
-     ", max: " << joints_.servo_msg[EYES].servo_cmd + EYESOFFSET << "}\n";
-  of << "RARM: {min: " << joints_.servo_msg[RARM].servo_cmd - ARMOFFSET <<
-     ", zero: " << int(joints_.servo_msg[RARM].servo_cmd) <<
-     ", max: " << joints_.servo_msg[RARM].servo_cmd + ARMOFFSET << "}\n";
-  of << "LARM: {min: " << joints_.servo_msg[LARM].servo_cmd - ARMOFFSET <<
-     ", zero: " << int(joints_.servo_msg[LARM].servo_cmd) <<
-     ", max: " << joints_.servo_msg[LARM].servo_cmd + ARMOFFSET << "}\n";
-  of << "AUX1: {min: " << joints_.servo_msg[AUX1].servo_cmd - AUXOFFSET <<
-     ", zero: " << int(joints_.servo_msg[AUX1].servo_cmd) <<
-     ", max: " << joints_.servo_msg[AUX1].servo_cmd + AUXOFFSET << "}\n";
-  of << "AUX2: {min: " << joints_.servo_msg[AUX2].servo_cmd - AUXOFFSET <<
-     ", zero: " << int(joints_.servo_msg[AUX2].servo_cmd) <<
-     ", max: " << joints_.servo_msg[AUX2].servo_cmd + AUXOFFSET << "}\n";
+  of << "# ****************************************************************************\n"
+     << "# **WARNING: DO NOT CHANGE ANYTHING BELOW UNLESS YOU KNOW WHAT YOU'RE DOING!**\n"
+     << "# ****************************************************************************\n";
+  of << "calibrated: true\n\n";
+  for (int id = 0; id < NUMJOINTS; ++id) {
+    std::string name = NAMES[id];
+    int off(0);
+    int val = int(joints_.servo_msg[id].servo_cmd);
+    if ((name == "LHIP") or (name == "RHIP")) {off = HIP_OFFSET;}
+    else if ((name == "LTWIST") or (name == "RTWIST")) {off = TWIST_OFFSET;}
+    else if ((name == "LKNEE") or (name == "RKNEE")) {off = KNEE_OFFSET;}
+    else if ((name == "LARM") or (name == "RARM")) {off = ARM_OFFSET;}
+    else if (name == "EYES") {off = EYES_OFFSET;}
+    else if ((name == "AUX1") or (name == "AUX2")) {off = AUX_OFFSET;}
+    else {WARN("No offset found for joint: " << name << std::endl);}
+    of << name << ": {min: " << std::max(val - off, -126) <<
+       ", zero: " << val << ", max: " << std::min(val + off, 126) <<
+       ", dir: " << JOINT_DIR[id] << ", mult: " << JOINT_MULT[id] <<  "}\n";
+  }
   of.close();
 }
 

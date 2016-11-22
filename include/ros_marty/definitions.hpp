@@ -12,6 +12,7 @@
 #ifndef MARTY_DEFINITIONS_HPP
 #define MARTY_DEFINITIONS_HPP
 
+#include <unistd.h>
 #include <map>
 
 #define DEBUG_MODE false
@@ -23,94 +24,90 @@
 #define DEBUG(x) std::cerr << "\033[22;34;1m" << x << "\033[0m";  // BLUE
 #define CLEAR() std::cerr << "\x1B[2J\x1B[H"; // Clear Console
 
+inline void sleepms(int ms) {usleep(ms * 1000);}
+
 enum JOINTS {
-  RHIP = 0,
-  RTWIST,
-  RKNEE,
-  LHIP,
+  LHIP = 0,
   LTWIST,
   LKNEE,
-  EYES,
-  RARM,
+  RHIP,
+  RTWIST,
+  RKNEE,
   LARM,
+  RARM,
+  EYES,
   AUX1,
   AUX2,
   NUMJOINTS // Number of Joints, Leave at the end!
 };
 
-const std::vector <std::string> JOINT_NAMES = {
-  "RHIP",
-  "RTWIST",
-  "RKNEE",
+const std::vector <std::string> NAMES = {
   "LHIP",
   "LTWIST",
   "LKNEE",
-  "EYES",
-  "RARM",
+  "RHIP",
+  "RTWIST",
+  "RKNEE",
   "LARM",
+  "RARM",
+  "EYES",
   "AUX1",
   "AUX2"
 };
 
-const std::map<std::string, int> NAMES = {
-  {"RHIP", RHIP},
-  {"RTWIST", RTWIST},
-  {"RKNEE", RKNEE},
+const std::vector <int> JOINT_DIR = {
+  1,  //   "LHIP",
+  1,  //   "LTWIST",
+  -1,  //   "LKNEE",
+  1,  //   "RHIP",
+  1,  //   "RTWIST",
+  -1,  //   "RKNEE",
+  1,  //   "LARM",
+  -1,  //   "RARM",
+  1,  //   "EYES",
+  1,  //   "AUX1",
+  1   //   "AUX2"
+};
+
+const std::vector <int> JOINT_MULT = {
+  1,  //   "LHIP",
+  1,  //   "LTWIST",
+  1,  //   "LKNEE",
+  1,  //   "RHIP",
+  1,  //   "RTWIST",
+  1,  //   "RKNEE",
+  2,  //   "LARM",
+  2,  //   "RARM",
+  1,  //   "EYES",
+  1,  //   "AUX1",
+  1   //   "AUX2"
+};
+
+const std::map<std::string, int> JOINT_NAMES = {
   {"LHIP", LHIP},
   {"LTWIST", LTWIST},
   {"LKNEE", LKNEE},
-  {"EYES", EYES},
-  {"RARM", RARM},
+  {"RHIP", RHIP},
+  {"RTWIST", RTWIST},
+  {"RKNEE", RKNEE},
   {"LARM", LARM},
+  {"RARM", RARM},
+  {"EYES", EYES},
   {"AUX1", AUX1},
   {"AUX2", AUX2}
 };
 
-# define HIPOFFSET 100
-# define TWISTOFFSET 110
-# define KNEEOFFSET 110
-# define ARMOFFSET 110
-# define EYESOFFSET 100
-# define AUXOFFSET 110
+# define HIP_OFFSET 100
+# define TWIST_OFFSET 110
+# define KNEE_OFFSET 110
+# define ARM_OFFSET 300
+# define EYES_OFFSET 300
+# define AUX_OFFSET 110
 
-// Servo polarity and multiplier
-// #define RHIPDIR   1
-// #define RHIPMULT  0.5
-
-// #define RTWISTDIR   1
-// #define RTWISTMULT  0.5
-
-// #define RKNEEDIR  -1
-// #define RKNEEMULT 1
-
-// #define LHIPDIR   1
-// #define LHIPMULT  0.5
-
-// #define LTWISTDIR   1
-// #define LTWISTMULT  0.5
-
-// #define LKNEEDIR  -1
-// #define LKNEEMULT 0.5
-
-// #define LARMDIR   1
-// #define LARMMULT    0.5
-
-// #define RARMDIR   -1
-// #define RARMMULT    0.5
-
-// #define AUX1DIR   1
-// #define AUX1MULT  0.5
-
-// #define EYESDIR   1
-// #define EYESMULT  0.5
-
-// #define AUX2DIR   1
-// #define AUX2MULT  0.5
-
-// These are "angles" rather than servo commands
-#define EYESNORMAL  0
-#define EYESANGRY   22
-#define EYESEXCITED -20
-#define EYESWIDE  -50
+// TODO: These should not be definitions, but in joint calibration as rosparams!
+#define EYES_ANGRY   80
+#define EYES_NORMAL  60
+#define EYES_EXCITED 20
+#define EYES_WIDE  -100
 
 #endif  /* MARTY_DEFINITIONS_HPP */

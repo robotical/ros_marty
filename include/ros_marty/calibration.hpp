@@ -47,8 +47,9 @@ class Calibration {
   char getch();
 
 // Flags
-  bool saving_;
   bool enabled_;
+  bool saving_;
+  bool exiting_;
   bool calibrated_;
   char c_;
 
@@ -56,6 +57,7 @@ class Calibration {
 
 // Variables
   marty_msgs::ServoMsgArray joints_;
+  marty_msgs::ServoMsgArray cal_vals_;
 
 // ROS
   ros::Publisher joint_pub_;

@@ -17,8 +17,15 @@
 
 // Messages
 #include <std_msgs/Bool.h>
+#include <std_msgs/Float32.h>
+#include <std_srvs/SetBool.h>
+#include <marty_msgs/Accelerometer.h>
+#include <marty_msgs/GPIOs.h>
+#include <marty_msgs/MotorCurrents.h>
+#include <marty_msgs/Output.h>
 #include <marty_msgs/ServoMsg.h>
 #include <marty_msgs/ServoMsgArray.h>
+#include <marty_msgs/GPIOConfig.h>
 
 // MARTY
 #include <ros_marty/definitions.hpp>
@@ -45,37 +52,59 @@ class MartyCore {
  public:
   MartyCore(ros::NodeHandle& nh);
   ~MartyCore();
-  std::deque<float> jangles_;
-  int jointPosToServoCmd(float pos, int zero, float mult,
-                         int dir, int max, int min);
+  int jointPosToServoCmd(int id, float pos);
   void setServoJointPos(std::string name, int pos);
   void setServoPos(int channel, int pos);
   // bool stopServo(uint8_t jointIndex);
   void enableRobot();
   void stopRobot();
-  bool setServo(int joint, float angle);
-  void setServos(std::deque <float> angles);
-// Variables
+  bool setServo(int id, float angle);
+  void setServos(std::map<int, float> angles);
+
+  // Getters/Setters
+  bool hasFallen() {return falling_.data;}
+
+  // Public Variables
   robotJoint joint_[NUMJOINTS];
-  int numjoints_;
+  std::deque<float> jangles_;
 
  private:
+  void accelCB(const marty_msgs::Accelerometer::ConstPtr& msg);
+  void battCB(const std_msgs::Float32::ConstPtr& msg);
+  void gpioCB(const marty_msgs::GPIOs::ConstPtr& msg);
 
-// Flags
 
-// Parameters
+  bool setFallDetector(std_srvs::SetBool::Request&  req,
+                       std_srvs::SetBool::Response& res);
+
+  // Flags
+
+  // Parameters
   bool calibrated_;
+  bool fall_disable_;
+  double acc_thr_;
 
+  // Variables
+  marty_msgs::Accelerometer accel_;
+  std_msgs::Bool falling_;
+  float battery_val_;
+  marty_msgs::GPIOs gpios_val_;
 
-// ROS
+  // ROS
   std_msgs::Bool enable_robot_;
   marty_msgs::ServoMsg servo_msg_;
-  marty_msgs::ServoMsgArray servo_msg_array_;
+  // marty_msgs::ServoMsgArray servo_msg_array_;
 
-  ros::Publisher enable_pub_;
-  ros::Publisher servo_pub_;
-  ros::Publisher servo_array_pub_;
-
+  ros::Publisher  enable_pub_;
+  ros::Publisher  falling_pub_;
+  ros::Publisher  servo_pub_;
+  ros::Publisher  servo_array_pub_;
+  ros::Subscriber accel_sub_;
+  ros::Subscriber batt_sub_;
+  ros::Subscriber gpio_sub_;
+  ros::ServiceServer fall_dis_srv_;
+  ros::ServiceClient set_gpio_config_;
+  ros::ServiceClient get_gpio_config_;
 };
 
 #endif  /* MARTY_CORE_HPP */

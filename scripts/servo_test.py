@@ -11,9 +11,9 @@ def talker():
     servo_cmd_array = ServoMsgArray()
     servo_cmd_1 = ServoMsg()
     servo_cmd_2 = ServoMsg()
-    servo_cmd_1.servo_id = 0
+    servo_cmd_1.servo_id = 7
     servo_cmd_1.servo_cmd = 0
-    servo_cmd_2.servo_id = 3
+    servo_cmd_2.servo_id = 8
     servo_cmd_2.servo_cmd = 0
     servo_cmd_array.servo_msg.append(servo_cmd_1)
     servo_cmd_array.servo_msg.append(servo_cmd_2)

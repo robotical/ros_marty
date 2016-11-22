@@ -122,11 +122,6 @@ else()
 	set(CMAKE_C_COMPILER "/usr/bin/clang-${VERS}")
 endif()
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wno-deprecated-register -O2")
-# if(VERS=="")
-# 	message("No CLang version found, using default")
-# else()
-# 	message("CLANG FOUND"${VERS})
-# endif()
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
