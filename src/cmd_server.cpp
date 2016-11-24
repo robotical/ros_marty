@@ -137,7 +137,7 @@ void CmdServer::kick(int side, int move_time) {
 }
 
 void CmdServer::eyes(int amount, int amount2) {
-  robot_->setServoPos(EYES, amount);
+  robot_->setServo(EYES, amount);
 }
 
 void CmdServer::getData(int sensor, int id) {

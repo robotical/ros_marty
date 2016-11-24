@@ -105,9 +105,9 @@ const std::map<std::string, int> JOINT_NAMES = {
 # define AUX_OFFSET 110
 
 // TODO: These should not be definitions, but in joint calibration as rosparams!
-#define EYES_ANGRY   80
-#define EYES_NORMAL  60
-#define EYES_EXCITED 20
-#define EYES_WIDE  -100
+#define EYES_ANGRY   30
+#define EYES_NORMAL  0
+#define EYES_EXCITED -40
+#define EYES_WIDE  -120
 
 #endif  /* MARTY_DEFINITIONS_HPP */
