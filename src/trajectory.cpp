@@ -157,7 +157,7 @@ data_t Trajectory::genCelebration(MartyCore* robot, float move_time) {
   int lean_amount = 40;
 
   tline[0] = 0.1 * move_time;
-  tline[1 + RARM] = 200; tline[1 + LARM] = 200;
+  tline[1 + RARM] = 60; tline[1 + LARM] = 60;
   tline[1 + LTWIST] = 0; tline[1 + RTWIST] = 0;
   tline[1 + EYES] = -20;
   tSetpoints.push_back(tline);
@@ -166,13 +166,13 @@ data_t Trajectory::genCelebration(MartyCore* robot, float move_time) {
   for (float t = 0.2; t < 1.0; t += 0.2) {
     tline[0] = t * move_time;
     tline[1 + LKNEE] = lean_amount; tline[1 + RKNEE] = lean_amount;
-    tline[1 + RARM] = 200; tline[1 + LARM] = 50;
+    tline[1 + RARM] = 60; tline[1 + LARM] = 10;
     tline[1 + EYES] = -0;
     tSetpoints.push_back(tline);
 
     tline[0] = (t + 0.1) * move_time;
     tline[1 + LKNEE] = -lean_amount; tline[1 + RKNEE] = -lean_amount;
-    tline[1 + RARM] = 50; tline[1 + LARM] = 200;
+    tline[1 + RARM] = 10; tline[1 + LARM] = 60;
     tline[1 + EYES] = -40;
     tSetpoints.push_back(tline);
   }
@@ -184,7 +184,7 @@ data_t Trajectory::genCelebration(MartyCore* robot, float move_time) {
   tline[1 + EYES] = 0;
   tSetpoints.push_back(tline);
 
-  interpTrajectory(tSetpoints, tInterp, 0.05);
+  interpTrajectory(tSetpoints, tInterp, 0.02);
 
   return tInterp;
 }
