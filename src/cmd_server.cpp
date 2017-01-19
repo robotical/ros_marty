@@ -21,6 +21,7 @@ void CmdServer::robotReady() {
   sleepms(250);
   robot_->setServoPos(EYES, EYES_NORMAL);
   sleepms(w_after);
+  robot_->martyReady();
   robot_->stopRobot();
 }
 
@@ -70,6 +71,8 @@ void CmdServer::runCommand(vector<int> data) {
     if (l == 2) {arms(data[1]);} if (l == 3) {arms(data[1], data[2]);} break;
   case CMD_DEMO: demo(); break;
   case CMD_GET: if (l == 3) {getData(data[1], data[2]);} break;
+  case CMD_SOUND: if (l == 2) {playSound(data[1]);}
+    if (l == 3) {playSound(data[1], data[2]);} break;
   case CMD_STOP: stopRobot(); break;
   default:
     ROS_ERROR_STREAM("CmdServer did not recognise command " << data[0]); break;
@@ -384,6 +387,10 @@ void CmdServer::demo() {
   genTraj = genCelebration(robot_, 4.0);
   runTrajectory(robot_, genTraj);
   genTraj.clear();
+}
+
+void CmdServer::playSound(int frequency, int duration) {
+  robot_->playSound(frequency, (float)duration / 1000);
 }
 
 void CmdServer::stopRobot() {

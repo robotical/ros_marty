@@ -12,6 +12,7 @@ MartyCore::MartyCore(ros::NodeHandle& nh) : nh_(nh) {
   this->loadParams();
   this->init();
   this->rosSetup();
+  // this->martyReady();
   ROS_INFO("MartyCore Ready!");
 }
 
@@ -42,7 +43,7 @@ void MartyCore::loadParams() {
   }
 
   ros::param::param("/marty/check_fall", fall_disable_, true);
-  ros::param::param("/marty/fall_threshold", acc_thr_, -0.9);
+  ros::param::param("/marty/fall_threshold", acc_thr_, 0.9);
 
   marty_msgs::ServoMsg joint;
   for (int id = 0; id < NUMJOINTS; ++id) {
@@ -74,6 +75,8 @@ void MartyCore::rosSetup() {
   // SERVICES
   fall_dis_srv_ = nh_.advertiseService("/marty/fall_disable",
                                        &MartyCore::setFallDetector, this);
+  play_sound_ =
+    nh_.serviceClient<marty_msgs::Sound>("/marty/play_sound");
   // ros::service::waitForService("/marty/set_gpio_config");
   // set_gpio_config_ =
   //   nh_.serviceClient<marty_msgs::GPIOConfig>("/marty/set_gpio_config");
@@ -94,7 +97,7 @@ bool MartyCore::setFallDetector(std_srvs::SetBool::Request&  req,
 
 void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
   accel_ = *msg;
-  if ((accel_.y > acc_thr_) && (falling_.data == false)) {
+  if ((accel_.y < acc_thr_) && (falling_.data == false)) {
     ROS_WARN_STREAM("Robot Falling! " << accel_.y << std::endl);
     falling_.data = true;
     if (fall_disable_) {
@@ -103,7 +106,7 @@ void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
     }
     falling_pub_.publish(falling_);
   }
-  if ((accel_.y < acc_thr_) && (falling_.data == true)) {
+  if ((accel_.y > acc_thr_) && (falling_.data == true)) {
     ROS_WARN_STREAM("Robot Stable! " << accel_.y << std::endl);
     falling_.data = false;
     if (fall_disable_) {
@@ -120,6 +123,19 @@ void MartyCore::battCB(const std_msgs::Float32::ConstPtr& msg) {
 
 void MartyCore::gpioCB(const marty_msgs::GPIOs::ConstPtr& msg) {
   gpios_val_ = *msg;
+}
+
+void MartyCore::martyReady() {
+  this->playSound(440.0, 0.25);
+  this->playSound(880.0, 0.25);
+}
+
+void MartyCore::playSound(float frequency, float duration) {
+  // ROS_INFO_STREAM("GOT: " << frequency << " " << duration);
+  marty_msgs::Sound sound_srv;
+  sound_srv.request.frequency = frequency;
+  sound_srv.request.duration = duration;
+  play_sound_.call(sound_srv);
 }
 
 int MartyCore::jointPosToServoCmd(int id, float pos) {

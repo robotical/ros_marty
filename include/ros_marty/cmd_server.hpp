@@ -84,6 +84,7 @@ enum Commands {
   CMD_ARMS,
   CMD_DEMO,
   CMD_GET,
+  CMD_SOUND,
   CMD_STOP
 };
 
@@ -116,8 +117,9 @@ class CmdServer {
   void kick(int side = CMD_LEFT, int move_time = 3000);
   void lean(int dir, int amount = 100, int move_time = 2000);
   void liftLeg(int leg, int amount = 100, int move_time = 2000);
-  void moveJoint(int side, int joint, int amount, int movetime = 2000);
   void lowerLeg(int move_time = 1000);
+  void moveJoint(int side, int joint, int amount, int movetime = 2000);
+  void playSound(int freq = 440, int duration = 500);
   void stopRobot();
   void walk(int num_steps = 2, int turn = 0,
             int move_time = 3000, int step_length = 50);

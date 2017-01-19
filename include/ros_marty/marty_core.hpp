@@ -26,6 +26,7 @@
 #include <marty_msgs/ServoMsg.h>
 #include <marty_msgs/ServoMsgArray.h>
 #include <marty_msgs/GPIOConfig.h>
+#include <marty_msgs/Sound.h>
 
 // MARTY
 #include <ros_marty/definitions.hpp>
@@ -52,6 +53,7 @@ class MartyCore {
  public:
   MartyCore(ros::NodeHandle& nh);
   ~MartyCore();
+  void martyReady();
   int jointPosToServoCmd(int id, float pos);
   void setServoJointPos(std::string name, int pos);
   void setServoPos(int channel, int pos);
@@ -60,6 +62,7 @@ class MartyCore {
   void stopRobot();
   bool setServo(int id, float angle);
   void setServos(std::map<int, float> angles);
+  void playSound(float frequency, float duration);
 
   // Getters/Setters
   bool hasFallen() {return falling_.data;}
@@ -83,6 +86,7 @@ class MartyCore {
   bool calibrated_;
   bool fall_disable_;
   double acc_thr_;
+  double batt_thr_;
 
   // Variables
   marty_msgs::Accelerometer accel_;
@@ -103,6 +107,7 @@ class MartyCore {
   ros::Subscriber batt_sub_;
   ros::Subscriber gpio_sub_;
   ros::ServiceServer fall_dis_srv_;
+  ros::ServiceClient play_sound_;
   ros::ServiceClient set_gpio_config_;
   ros::ServiceClient get_gpio_config_;
 };
