@@ -511,13 +511,23 @@ void CmdServer::waitForCmd() {
     }
     close(clisock);
   } else if (ros_cmd_) {
-    robot_->enableRobot();
-    if (!busy_) { runCommand(cmd_data_); }
-    else { cmd_queue_.push_back(cmd_data_); }
+    if (robot_->hasFallen()) {
+      ROS_WARN("Marty has fallen over! Please pick him up and try again.");
+      robot_->stopRobot();
+    } else {
+      robot_->enableRobot();
+      if (!busy_) { runCommand(cmd_data_); }
+      else { cmd_queue_.push_back(cmd_data_); }
+    }
     ros_cmd_ = false;
   } else if ((!busy_) && (cmd_queue_.size() > 0)) {
-    ROS_INFO_STREAM("RUNNING NEXT CMD: " << cmd_queue_[0][0]);
-    runCommand(cmd_queue_[0]);
+    if (robot_->hasFallen()) {
+      ROS_WARN("Marty has fallen over! Please pick him up and try again.");
+      robot_->stopRobot();
+    } else {
+      ROS_INFO_STREAM("RUNNING NEXT CMD: " << cmd_queue_[0][0]);
+      runCommand(cmd_queue_[0]);
+    }
     cmd_queue_.erase(cmd_queue_.begin());
   }
 }
