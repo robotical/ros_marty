@@ -17,9 +17,11 @@
   <build_depend>marty_msgs</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
+  <build_depend>tf2_ros</build_depend>
   <run_depend>marty_msgs</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>std_msgs</run_depend>
+  <run_depend>tf2_ros</run_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

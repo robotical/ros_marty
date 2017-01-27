@@ -6,22 +6,24 @@ using namespace Trajectory;
  * @brief      Robot motion executed when cmdServer is ready
  */
 void CmdServer::robotReady() {
-  robot_->enableRobot();
-  data_t tSetpoints, tInterp;
-  deque <float> tline(NUMJOINTS + 1, 0);
-  tSetpoints.push_back(tline);
-  setPointsLeanLeft(tSetpoints, 30, 0.5);
-  setPointsLeanRight(tSetpoints, 30, 1.0);
-  setPointsLegsZero(tSetpoints, 0.5);
-  interpTrajectory(tSetpoints, tInterp, 0.05);
-  runTrajectory(robot_, tInterp);
+  if (ready_move_) {
+    robot_->enableRobot();
+    data_t tSetpoints, tInterp;
+    deque <float> tline(NUMJOINTS + 1, 0);
+    tSetpoints.push_back(tline);
+    setPointsLeanLeft(tSetpoints, 30, 0.5);
+    setPointsLeanRight(tSetpoints, 30, 1.0);
+    setPointsLegsZero(tSetpoints, 0.5);
+    interpTrajectory(tSetpoints, tInterp, 0.05);
+    runTrajectory(robot_, tInterp);
 
-  sleepms(w_before);
-  robot_->setServoPos(EYES, EYES_ANGRY);
-  sleepms(250);
-  robot_->setServoPos(EYES, EYES_NORMAL);
-  sleepms(w_after);
-  robot_->martyReady();
+    sleepms(w_before);
+    robot_->setServoPos(EYES, EYES_ANGRY);
+    sleepms(250);
+    robot_->setServoPos(EYES, EYES_NORMAL);
+    sleepms(w_after);
+    robot_->readySound();
+  }
   robot_->stopRobot();
 }
 
@@ -35,10 +37,10 @@ void CmdServer::robotReady() {
  */
 void CmdServer::runCommand(vector<int> data) {
   busy_ = true;
-  // ROS_INFO_STREAM("CMD: " << data[0]);
-  // for (int i = 0; i < data.size(); ++i) {
-  //   ROS_INFO_STREAM("CMDData " << i << ": " << data[i]);
-  // }
+  ROS_INFO_STREAM("CMD: " << data[0]);
+  for (int i = 0; i < data.size(); ++i) {
+    ROS_INFO_STREAM("CMDData " << i << ": " << data[i]);
+  }
   int l = data.size();
   switch (data[0]) {
   case CMD_HELLO: hello(); break;
@@ -425,6 +427,7 @@ void CmdServer::loadParams() {
     ROS_ERROR("Please use 'roslaunch ros_marty marty.launch'\n");
     ros::shutdown();
   }
+  nh_.param("ready_move", ready_move_, true);
 }
 
 void CmdServer::init() {
@@ -494,7 +497,7 @@ void CmdServer::waitForCmd() {
         dbytes.push_back(buffer[i]);
       }
       ROS_DEBUG("Running Command\n");
-      if (robot_->hasFallen()) {
+      if (robot_->hasFallen() && !robot_->fallDisabled()) {
         ROS_WARN("Marty has fallen over! Please pick him up and try again.");
         resp_msg = "Fallen";
       } else {
@@ -511,7 +514,7 @@ void CmdServer::waitForCmd() {
     }
     close(clisock);
   } else if (ros_cmd_) {
-    if (robot_->hasFallen()) {
+    if (robot_->hasFallen() && !robot_->fallDisabled()) {
       ROS_WARN("Marty has fallen over! Please pick him up and try again.");
       robot_->stopRobot();
     } else {
@@ -521,7 +524,7 @@ void CmdServer::waitForCmd() {
     }
     ros_cmd_ = false;
   } else if ((!busy_) && (cmd_queue_.size() > 0)) {
-    if (robot_->hasFallen()) {
+    if (robot_->hasFallen() && !robot_->fallDisabled()) {
       ROS_WARN("Marty has fallen over! Please pick him up and try again.");
       robot_->stopRobot();
     } else {

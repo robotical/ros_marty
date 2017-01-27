@@ -14,6 +14,8 @@
 
 // ROS
 #include <ros/ros.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2/LinearMath/Quaternion.h>
 
 // Messages
 #include <std_msgs/Bool.h>
@@ -27,6 +29,7 @@
 #include <marty_msgs/ServoMsgArray.h>
 #include <marty_msgs/GPIOConfig.h>
 #include <marty_msgs/Sound.h>
+#include <geometry_msgs/TransformStamped.h>
 
 // MARTY
 #include <ros_marty/definitions.hpp>
@@ -53,7 +56,7 @@ class MartyCore {
  public:
   MartyCore(ros::NodeHandle& nh);
   ~MartyCore();
-  void martyReady();
+  void readySound();
   int jointPosToServoCmd(int id, float pos);
   void setServoJointPos(std::string name, int pos);
   void setServoPos(int channel, int pos);
@@ -66,6 +69,7 @@ class MartyCore {
 
   // Getters/Setters
   bool hasFallen() {return falling_.data;}
+  bool fallDisabled() {return fall_disable_;}
 
   // Public Variables
   robotJoint joint_[NUMJOINTS];
@@ -75,6 +79,7 @@ class MartyCore {
   void accelCB(const marty_msgs::Accelerometer::ConstPtr& msg);
   void battCB(const std_msgs::Float32::ConstPtr& msg);
   void gpioCB(const marty_msgs::GPIOs::ConstPtr& msg);
+  void tfCB(const ros::TimerEvent& e);
 
 
   bool setFallDetector(std_srvs::SetBool::Request&  req,
@@ -86,7 +91,8 @@ class MartyCore {
   bool calibrated_;
   bool fall_disable_;
   double acc_thr_;
-  double batt_thr_;
+  // double batt_thr_;
+  double camera_ori_;
 
   // Variables
   marty_msgs::Accelerometer accel_;
@@ -98,6 +104,7 @@ class MartyCore {
   std_msgs::Bool enable_robot_;
   marty_msgs::ServoMsg servo_msg_;
   // marty_msgs::ServoMsgArray servo_msg_array_;
+  geometry_msgs::TransformStamped cam_tf_;
 
   ros::Publisher  enable_pub_;
   ros::Publisher  falling_pub_;
@@ -110,6 +117,10 @@ class MartyCore {
   ros::ServiceClient play_sound_;
   ros::ServiceClient set_gpio_config_;
   ros::ServiceClient get_gpio_config_;
+
+  // TF
+  tf2_ros::TransformBroadcaster tf_br_;
+  ros::Timer tf_timer_;
 };
 
 #endif  /* MARTY_CORE_HPP */

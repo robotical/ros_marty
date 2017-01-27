@@ -12,7 +12,6 @@ MartyCore::MartyCore(ros::NodeHandle& nh) : nh_(nh) {
   this->loadParams();
   this->init();
   this->rosSetup();
-  // this->martyReady();
   ROS_INFO("MartyCore Ready!");
 }
 
@@ -44,6 +43,7 @@ void MartyCore::loadParams() {
 
   ros::param::param("/marty/check_fall", fall_disable_, true);
   ros::param::param("/marty/fall_threshold", acc_thr_, 0.9);
+  ros::param::param("/marty/camera_ori", camera_ori_, 15.0);
 
   marty_msgs::ServoMsg joint;
   for (int id = 0; id < NUMJOINTS; ++id) {
@@ -56,6 +56,28 @@ void MartyCore::loadParams() {
 void MartyCore::init() {
   falling_.data = false;
   for (int ji = 0; ji < NUMJOINTS; ji++) { jangles_.push_back(0); }
+  // TF
+  cam_tf_.header.frame_id = "base_link";
+  cam_tf_.child_frame_id = "camera";
+  cam_tf_.transform.translation.x = 0.02;
+  cam_tf_.transform.translation.y = 0.0;
+  cam_tf_.transform.translation.z = 0.01;
+  tf2::Quaternion q(-0.54168, 0.54168, -0.45452, 0.45452);
+  double ori = ((90 - camera_ori_) / 180) * M_PI;
+  // ROS_INFO_STREAM("CamOri: " << camera_ori_ << " ORI: " << ori << " PI: " <<
+  //                 M_PI);
+  // q.setRPY(-M_PI, ori, (M_PI / 2)); // TODO: This is borked
+  // ROS_INFO_STREAM("X: " << q.x() << " Y: " << q.y() <<
+  //                 " Z: " << q.z() << " W: " << q.w());
+  // cam_tf_.transform.rotation.x = q.x();
+  // cam_tf_.transform.rotation.y = q.y();
+  // cam_tf_.transform.rotation.z = q.z();
+  // cam_tf_.transform.rotation.w = q.w();
+  q.normalize();
+  cam_tf_.transform.rotation.x = q.x();
+  cam_tf_.transform.rotation.y = q.y();
+  cam_tf_.transform.rotation.z = q.z();
+  cam_tf_.transform.rotation.w = q.w();
 }
 
 void MartyCore::rosSetup() {
@@ -75,8 +97,7 @@ void MartyCore::rosSetup() {
   // SERVICES
   fall_dis_srv_ = nh_.advertiseService("/marty/fall_disable",
                                        &MartyCore::setFallDetector, this);
-  play_sound_ =
-    nh_.serviceClient<marty_msgs::Sound>("/marty/play_sound");
+  play_sound_ = nh_.serviceClient<marty_msgs::Sound>("/marty/play_sound");
   // ros::service::waitForService("/marty/set_gpio_config");
   // set_gpio_config_ =
   //   nh_.serviceClient<marty_msgs::GPIOConfig>("/marty/set_gpio_config");
@@ -88,6 +109,7 @@ void MartyCore::rosSetup() {
   // if (set_gpio_config_.call(srv)) {
   //   if (srv.response.success) {ROS_INFO("SUCCESS!");} else {ROS_WARN("NAY!");}
   // } else { ROS_ERROR("Failed to call set gpio service!"); }
+  tf_timer_ = nh_.createTimer(ros::Duration(0.1), &MartyCore::tfCB, this);
 }
 
 bool MartyCore::setFallDetector(std_srvs::SetBool::Request&  req,
@@ -125,13 +147,17 @@ void MartyCore::gpioCB(const marty_msgs::GPIOs::ConstPtr& msg) {
   gpios_val_ = *msg;
 }
 
-void MartyCore::martyReady() {
+void MartyCore::tfCB(const ros::TimerEvent& e) {
+  cam_tf_.header.stamp = ros::Time::now();
+  tf_br_.sendTransform(cam_tf_);
+}
+
+void MartyCore::readySound() {
   this->playSound(440.0, 0.25);
   this->playSound(880.0, 0.25);
 }
 
 void MartyCore::playSound(float frequency, float duration) {
-  // ROS_INFO_STREAM("GOT: " << frequency << " " << duration);
   marty_msgs::Sound sound_srv;
   sound_srv.request.frequency = frequency;
   sound_srv.request.duration = duration;

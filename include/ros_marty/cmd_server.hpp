@@ -137,6 +137,7 @@ class CmdServer {
   bool resp_request_;
 
   // Params
+  bool ready_move_;
 
   // Variables
   MartyCore* robot_;
