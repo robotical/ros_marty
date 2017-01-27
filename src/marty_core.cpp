@@ -87,7 +87,7 @@ void MartyCore::rosSetup() {
     ROS_INFO("Waiting for rosserial to start...\n");
     sleepms(500);
   }
-  falling_pub_ = nh_.advertise<std_msgs::Bool>("/falling", 10);
+  falling_pub_ = nh_.advertise<std_msgs::Bool>("/falling", 1, true);
   servo_pub_ = nh_.advertise<marty_msgs::ServoMsg>("/servo", 10);
   servo_array_pub_ = nh_.advertise<marty_msgs::ServoMsgArray>("/servo_array", 10);
   // SUBSCRIBERS

@@ -48,7 +48,7 @@ void CmdServer::runCommand(vector<int> data) {
     if (l == 4) {moveJoint(data[1], data[2], data[3]);}
     if (l == 5) {moveJoint(data[1], data[2], data[3], data[4]);} break;
   case CMD_LEAN:
-    if (l == 3) {lean(data[1], data[2]);}
+    if (l == 2) {lean(data[1]);} if (l == 3) {lean(data[1], data[2]);}
     if (l == 4) {lean(data[1], data[2], data[3]);} break;
   case CMD_WALK:
     if (l == 2) {walk(data[1]);} if (l == 3) {walk(data[1], data[2]);}
@@ -73,6 +73,10 @@ void CmdServer::runCommand(vector<int> data) {
     if (l == 2) {arms(data[1]);} if (l == 3) {arms(data[1], data[2]);} break;
   case CMD_DEMO: demo(); break;
   case CMD_GET: if (l == 3) {getData(data[1], data[2]);} break;
+  case CMD_SIDESTEP:
+    if (l == 2) {sideStep(data[1]);} if (l == 3) {sideStep(data[1], data[2]);}
+    if (l == 4) {sideStep(data[1], data[2], data[3]);}
+    if (l == 5) {sideStep(data[1], data[2], data[3], data[4]);} break;
   case CMD_SOUND: if (l == 2) {playSound(data[1]);}
     if (l == 3) {playSound(data[1], data[2]);} break;
   case CMD_STOP: stopRobot(); break;
@@ -391,6 +395,20 @@ void CmdServer::demo() {
   genTraj.clear();
 }
 
+void CmdServer::sideStep(int side, int num_steps, int movetime,
+                         int step_length) {
+  if ((side == CMD_LEFT) || (side == CMD_RIGHT)) {
+    int opp_side = 1 - side;  //  Switch left/right
+    if (side == CMD_LEFT) {step_length = -step_length;} // Invert step direction
+    for (int step = 0; step < num_steps; ++step) {
+      this->moveJoint(side, J_KNEE, -step_length, (movetime / 4));
+      this->moveJoint(opp_side, J_KNEE, step_length, (movetime / 4));
+      this->moveJoint(side, J_KNEE, 0, (movetime / 4));
+      this->moveJoint(opp_side, J_KNEE, 0, (movetime / 4));
+    }
+  } else { ROS_ERROR("Can only sidestep left or right"); }
+}
+
 void CmdServer::playSound(int frequency, int duration) {
   robot_->playSound(frequency, (float)duration / 1000);
 }
@@ -497,7 +515,7 @@ void CmdServer::waitForCmd() {
         dbytes.push_back(buffer[i]);
       }
       ROS_DEBUG("Running Command\n");
-      if (robot_->hasFallen() && !robot_->fallDisabled()) {
+      if (robot_->hasFallen() && robot_->fallDisabled()) {
         ROS_WARN("Marty has fallen over! Please pick him up and try again.");
         resp_msg = "Fallen";
       } else {
@@ -514,7 +532,7 @@ void CmdServer::waitForCmd() {
     }
     close(clisock);
   } else if (ros_cmd_) {
-    if (robot_->hasFallen() && !robot_->fallDisabled()) {
+    if (robot_->hasFallen() && robot_->fallDisabled()) {
       ROS_WARN("Marty has fallen over! Please pick him up and try again.");
       robot_->stopRobot();
     } else {
@@ -524,7 +542,7 @@ void CmdServer::waitForCmd() {
     }
     ros_cmd_ = false;
   } else if ((!busy_) && (cmd_queue_.size() > 0)) {
-    if (robot_->hasFallen() && !robot_->fallDisabled()) {
+    if (robot_->hasFallen() && robot_->fallDisabled()) {
       ROS_WARN("Marty has fallen over! Please pick him up and try again.");
       robot_->stopRobot();
     } else {

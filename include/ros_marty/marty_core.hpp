@@ -89,7 +89,7 @@ class MartyCore {
 
   // Parameters
   bool calibrated_;
-  bool fall_disable_;
+  bool fall_disable_; //  Whether to disable robot if fallen
   double acc_thr_;
   // double batt_thr_;
   double camera_ori_;
