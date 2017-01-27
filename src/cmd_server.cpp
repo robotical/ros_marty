@@ -18,9 +18,9 @@ void CmdServer::robotReady() {
     runTrajectory(robot_, tInterp);
 
     sleepms(w_before);
-    robot_->setServoPos(EYES, EYES_ANGRY);
+    robot_->setServo(EYES, EYES_ANGRY);
     sleepms(250);
-    robot_->setServoPos(EYES, EYES_NORMAL);
+    robot_->setServo(EYES, EYES_NORMAL);
     sleepms(w_after);
     robot_->readySound();
   }
@@ -104,9 +104,9 @@ void CmdServer::hello() {
   runTrajectory(robot_, tInterp);
   // Move eyes
   sleepms(w_before);
-  robot_->setServoPos(EYES, EYES_WIDE);
+  robot_->setServo(EYES, EYES_WIDE);
   sleepms(500);
-  robot_->setServoPos(EYES, EYES_NORMAL);
+  robot_->setServo(EYES, EYES_NORMAL);
   sleepms(w_after);
 }
 
