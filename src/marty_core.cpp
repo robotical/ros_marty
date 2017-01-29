@@ -62,7 +62,10 @@ void MartyCore::init() {
   cam_tf_.transform.translation.x = 0.02;
   cam_tf_.transform.translation.y = 0.0;
   cam_tf_.transform.translation.z = 0.01;
-  tf2::Quaternion q(-0.54168, 0.54168, -0.45452, 0.45452);
+  // tf2::Quaternion q(-0.54168, 0.54168, -0.45452, 0.45452);
+  // tf2::Quaternion q(-0.596, 0.596, -0.380, 0.380); // 25 deg
+  tf2::Quaternion q(-0.627, 0.627, -0.327, 0.327); // 35 deg
+
   double ori = ((90 - camera_ori_) / 180) * M_PI;
   // ROS_INFO_STREAM("CamOri: " << camera_ori_ << " ORI: " << ori << " PI: " <<
   //                 M_PI);

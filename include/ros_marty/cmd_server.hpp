@@ -125,7 +125,7 @@ class CmdServer {
   void playSound(int freq = 440, int duration = 500);
   void stopRobot();
   void walk(int num_steps = 2, int turn = 0,
-            int move_time = 3000, int step_length = 50);
+            int move_time = 3000, int step_length = 50, int side = -1);
 
   void gpioCB(const marty_msgs::GPIOs& msg) {gpio_data_ = msg;}
   void accelCB(const marty_msgs::Accelerometer& msg) {accel_data_ = msg;}

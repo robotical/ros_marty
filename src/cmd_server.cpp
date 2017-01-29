@@ -53,7 +53,8 @@ void CmdServer::runCommand(vector<int> data) {
   case CMD_WALK:
     if (l == 2) {walk(data[1]);} if (l == 3) {walk(data[1], data[2]);}
     if (l == 4) {walk(data[1], data[2], data[3]);}
-    if (l == 5) {walk(data[1], data[2], data[3], data[4]);} break;
+    if (l == 5) {walk(data[1], data[2], data[3], data[4]);}
+    if (l == 6) {walk(data[1], data[2], data[3], data[4], data[5]);} break;
   case CMD_KICK:
     if (l == 2) {kick(data[1]);} if (l == 3) {kick(data[1], data[2]);} break;
   case CMD_EYES:
@@ -114,14 +115,18 @@ void CmdServer::hello() {
   sleepms(w_after);
 }
 
-void CmdServer::walk(int num_steps, int turn, int move_time, int step_length) {
+void CmdServer::walk(int num_steps, int turn, int move_time, int step_length,
+                     int side) {
   data_t tInterp;
   float step_time = ((float) move_time) / 1000; // Float in seconds
   bool leftFoot = false;
-  // Step with left foot if LHip is ahead
-  if (robot_->jangles_[RHIP] < robot_->jangles_[LHIP]) { leftFoot = true; }
-  // Invert if walking backwards
-  if (step_length < 0) { leftFoot = !leftFoot; }
+  if (side == CMD_LEFT) { leftFoot = true; }
+  else if (side == CMD_RIGHT) { leftFoot = false; } else {
+    // Step with left foot if LHip is ahead
+    if (robot_->jangles_[RHIP] < robot_->jangles_[LHIP]) { leftFoot = true; }
+    // Invert if walking backwards
+    if (step_length < 0) { leftFoot = !leftFoot; }
+  }
   // Start walking!
   for (int step_num = 0; step_num < num_steps; step_num++) {
     if (leftFoot) {
