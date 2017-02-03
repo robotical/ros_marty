@@ -18,31 +18,19 @@
 // Marty
 #include "marty_msgs/Command.h"
 #include "ros_marty/marty_core.hpp"
-// #include "ros_marty/data_t.hpp"
 #include "ros_marty/trajectory.hpp"
 
 // ROS
 #include "std_msgs/Float32.h"
+#include "geometry_msgs/Pose2D.h"
 #include "marty_msgs/GPIOs.h"
 #include "marty_msgs/Accelerometer.h"
 #include "marty_msgs/MotorCurrents.h"
 
 #define PORT  1569
 
-#define DEFAULT_STEPTIME  2.0
-#define DEFAULT_MOVETIME  1.0
-
-// #define CMD_LEFT  0
-// #define CMD_RIGHT 1
-
-// #define CMD_FORWARD   0
-// #define CMD_BACKWARD  1
-
-#define CMD_POSITIVE  0
-#define CMD_NEGATIVE  1
-
-#define w_before 150
-#define w_after 150
+// This wait time is required when a stop message is sent straight after
+#define stop_wait 150  //  Wait time between instantaneous servo commands
 
 /**
  * @brief      Add new commands here for the server to receive
@@ -93,7 +81,8 @@ enum Sensors {
   GET_GPIO = 0,
   GET_ACCEL,
   GET_BATT,
-  GET_CURR
+  GET_CURR,
+  GET_BALL
 };
 
 class CmdServer {
@@ -131,6 +120,7 @@ class CmdServer {
   void accelCB(const marty_msgs::Accelerometer& msg) {accel_data_ = msg;}
   void battCB(const std_msgs::Float32& msg) {batt_data_ = msg;}
   void currCB(const marty_msgs::MotorCurrents& msg) {curr_data_ = msg;}
+  void ballCB(const geometry_msgs::Pose2D& msg) {ball_pos_ = msg;}
   bool cmd_service(marty_msgs::Command::Request&  req,
                    marty_msgs::Command::Response& res);
 
@@ -152,12 +142,14 @@ class CmdServer {
   marty_msgs::Accelerometer accel_data_;
   std_msgs::Float32 batt_data_;
   marty_msgs::MotorCurrents curr_data_;
+  geometry_msgs::Pose2D ball_pos_;
 
   // ROS
   ros::Subscriber gpio_sub_;
   ros::Subscriber accel_sub_;
   ros::Subscriber batt_sub_;
   ros::Subscriber curr_sub_;
+  ros::Subscriber ball_sub_;
   ros::ServiceServer cmd_srv_;
 
  public:

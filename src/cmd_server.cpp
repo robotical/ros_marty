@@ -17,11 +17,11 @@ void CmdServer::robotReady() {
     interpTrajectory(tSetpoints, tInterp, 0.05);
     runTrajectory(robot_, tInterp);
 
-    sleepms(w_before);
+    sleepms(stop_wait);
     robot_->setServo(EYES, EYES_ANGRY);
-    sleepms(250);
+    sleepms(stop_wait * 2);
     robot_->setServo(EYES, EYES_NORMAL);
-    sleepms(w_after);
+    sleepms(stop_wait);
     robot_->readySound();
   }
   robot_->stopRobot();
@@ -108,11 +108,11 @@ void CmdServer::hello() {
   tInterp = genReturnToZero(robot_, 1.5);
   runTrajectory(robot_, tInterp);
   // Move eyes
-  sleepms(w_before);
+  sleepms(stop_wait);
   robot_->setServo(EYES, EYES_WIDE);
-  sleepms(500);
+  sleepms(stop_wait * 3);
   robot_->setServo(EYES, EYES_NORMAL);
-  sleepms(w_after);
+  sleepms(stop_wait);
 }
 
 void CmdServer::walk(int num_steps, int turn, int move_time, int step_length,
@@ -169,6 +169,9 @@ void CmdServer::getData(int sensor, int id) {
   } else if (sensor == GET_CURR) {
     if ((id >= 8) || (id < 0)) {resp_request_ = false;}
     else { val_request_ = curr_data_.current[id]; }
+  } else if (sensor == GET_BALL) {
+    if (id == AXES_X) { val_request_ = ball_pos_.x;}
+    else if (id == AXES_Y) { val_request_ = ball_pos_.y;}
   } else {
     resp_request_ = false;
   }
@@ -419,7 +422,7 @@ void CmdServer::playSound(int frequency, int duration) {
 }
 
 void CmdServer::stopRobot() {
-  sleepms(100);
+  sleepms(stop_wait);
   robot_->stopRobot();
 }
 
@@ -465,6 +468,7 @@ void CmdServer::rosSetup() {
   accel_sub_ = nh_.subscribe("/accel", 1000, &CmdServer::accelCB, this);
   batt_sub_ = nh_.subscribe("/battery", 1000, &CmdServer::battCB, this);
   curr_sub_ = nh_.subscribe("/motor_currents", 1000, &CmdServer::currCB, this);
+  ball_sub_ = nh_.subscribe("/ball_pos", 1000, &CmdServer::ballCB, this);
   cmd_srv_ = nh_.advertiseService("/command", &CmdServer::cmd_service, this);
 }
 
