@@ -15,12 +15,15 @@
 // ROS
 #include <ros/ros.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
 #include <tf2/LinearMath/Quaternion.h>
 
 // Messages
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float32.h>
 #include <std_srvs/SetBool.h>
+#include <sensor_msgs/JointState.h>
+#include <nav_msgs/Odometry.h>
 #include <marty_msgs/Accelerometer.h>
 #include <marty_msgs/GPIOs.h>
 #include <marty_msgs/MotorCurrents.h>
@@ -72,20 +75,27 @@ class MartyCore {
   bool fallDisabled() {return fall_disable_;}
 
   // Public Variables
-  robotJoint joint_[NUMJOINTS];
+  robotJoint joint_[NUMJOINTS]; //  Internal Joint Data
   std::deque<float> jangles_;
 
  private:
+  void setupJointStates();
+  void setupOdometry();
+  void jointCB(const marty_msgs::ServoMsg::ConstPtr& msg);
+  void jointsCB(const marty_msgs::ServoMsgArray::ConstPtr& msg);
   void accelCB(const marty_msgs::Accelerometer::ConstPtr& msg);
   void battCB(const std_msgs::Float32::ConstPtr& msg);
   void gpioCB(const marty_msgs::GPIOs::ConstPtr& msg);
   void tfCB(const ros::TimerEvent& e);
 
 
+  void updateJointState(marty_msgs::ServoMsg servo);
+  void updateOdom();
   bool setFallDetector(std_srvs::SetBool::Request&  req,
                        std_srvs::SetBool::Response& res);
 
   // Flags
+  bool odom_setup_;
 
   // Parameters
   bool calibrated_;
@@ -103,13 +113,20 @@ class MartyCore {
   // ROS
   std_msgs::Bool enable_robot_;
   marty_msgs::ServoMsg servo_msg_;
+  sensor_msgs::JointState joints_;  // ROS Joint State msg
   // marty_msgs::ServoMsgArray servo_msg_array_;
   geometry_msgs::TransformStamped cam_tf_;
+  geometry_msgs::TransformStamped odom_tf_;
+  geometry_msgs::TransformStamped l_foot_tf_;
+  geometry_msgs::TransformStamped r_foot_tf_;
 
   ros::Publisher  enable_pub_;
   ros::Publisher  falling_pub_;
   ros::Publisher  servo_pub_;
   ros::Publisher  servo_array_pub_;
+  ros::Publisher  joints_pub_;
+  ros::Subscriber joint_sub_;
+  ros::Subscriber joints_sub_;
   ros::Subscriber accel_sub_;
   ros::Subscriber batt_sub_;
   ros::Subscriber gpio_sub_;
@@ -120,6 +137,9 @@ class MartyCore {
 
   // TF
   tf2_ros::TransformBroadcaster tf_br_;
+  tf2_ros::TransformBroadcaster odom_br_;
+  tf2_ros::Buffer tf_buff_;
+  tf2_ros::TransformListener tf_ls_;
   ros::Timer tf_timer_;
 };
 

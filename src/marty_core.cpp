@@ -8,7 +8,7 @@
 
 #include <ros_marty/marty_core.hpp>
 
-MartyCore::MartyCore(ros::NodeHandle& nh) : nh_(nh) {
+MartyCore::MartyCore(ros::NodeHandle& nh) : nh_(nh), tf_ls_(tf_buff_) {
   this->loadParams();
   this->init();
   this->rosSetup();
@@ -55,6 +55,7 @@ void MartyCore::loadParams() {
 
 void MartyCore::init() {
   falling_.data = false;
+  odom_setup_ = false;
   for (int ji = 0; ji < NUMJOINTS; ji++) { jangles_.push_back(0); }
   // TF
   cam_tf_.header.frame_id = "base_link";
@@ -66,7 +67,7 @@ void MartyCore::init() {
   // tf2::Quaternion q(-0.596, 0.596, -0.380, 0.380); // 25 deg
   tf2::Quaternion q(-0.627, 0.627, -0.327, 0.327); // 35 deg
 
-  double ori = ((90 - camera_ori_) / 180) * M_PI;
+  // double ori = ((90 - camera_ori_) / 180) * M_PI;
   // ROS_INFO_STREAM("CamOri: " << camera_ori_ << " ORI: " << ori << " PI: " <<
   //                 M_PI);
   // q.setRPY(-M_PI, ori, (M_PI / 2)); // TODO: This is borked
@@ -81,6 +82,7 @@ void MartyCore::init() {
   cam_tf_.transform.rotation.y = q.y();
   cam_tf_.transform.rotation.z = q.z();
   cam_tf_.transform.rotation.w = q.w();
+  this->setupJointStates();
 }
 
 void MartyCore::rosSetup() {
@@ -93,7 +95,10 @@ void MartyCore::rosSetup() {
   falling_pub_ = nh_.advertise<std_msgs::Bool>("/falling", 1, true);
   servo_pub_ = nh_.advertise<marty_msgs::ServoMsg>("/servo", 10);
   servo_array_pub_ = nh_.advertise<marty_msgs::ServoMsgArray>("/servo_array", 10);
+  joints_pub_ = nh_.advertise<sensor_msgs::JointState>("/joint_states", 10);
   // SUBSCRIBERS
+  joint_sub_ = nh_.subscribe("/servo", 1000, &MartyCore::jointCB, this);
+  joints_sub_ = nh_.subscribe("/servo_array", 1000, &MartyCore::jointsCB, this);
   accel_sub_ = nh_.subscribe("/accel", 1000, &MartyCore::accelCB, this);
   batt_sub_ = nh_.subscribe("/battery", 1000, &MartyCore::battCB, this);
   gpio_sub_ = nh_.subscribe("/gpios", 1000, &MartyCore::gpioCB, this);
@@ -118,6 +123,121 @@ void MartyCore::rosSetup() {
 bool MartyCore::setFallDetector(std_srvs::SetBool::Request&  req,
                                 std_srvs::SetBool::Response& res) {
   fall_disable_ = req.data; res.success = true; return true;
+}
+
+void MartyCore::setupJointStates() {
+  joints_.name.push_back("face_joint");
+  joints_.name.push_back("left_arm_servo_gear_joint");
+  joints_.name.push_back("left_arm_gear_joint");
+  joints_.name.push_back("right_arm_servo_gear_joint");
+  joints_.name.push_back("right_arm_gear_joint");
+  joints_.name.push_back("right_eye_joint");
+  joints_.name.push_back("left_eye_joint");
+  joints_.name.push_back("left_hip_link1_joint");
+  joints_.name.push_back("left_hip_link2_joint");
+  joints_.name.push_back("left_hip_link3_joint");
+  joints_.name.push_back("left_hip_servo_link_joint");
+  joints_.name.push_back("left_twist_servo_holder1_joint");
+  joints_.name.push_back("left_twist_shaft_joint");
+  joints_.name.push_back("left_knee_link1_joint");
+  joints_.name.push_back("left_knee_link2_joint");
+  joints_.name.push_back("left_knee_link3_joint");
+  joints_.name.push_back("left_knee_servo_link_joint");
+  joints_.name.push_back("left_foot_joint");
+  joints_.name.push_back("right_hip_link1_joint");
+  joints_.name.push_back("right_hip_link2_joint");
+  joints_.name.push_back("right_hip_link3_joint");
+  joints_.name.push_back("right_hip_servo_link_joint");
+  joints_.name.push_back("right_twist_servo_holder1_joint");
+  joints_.name.push_back("right_twist_shaft_joint");
+  joints_.name.push_back("right_knee_link1_joint");
+  joints_.name.push_back("right_knee_link2_joint");
+  joints_.name.push_back("right_knee_link3_joint");
+  joints_.name.push_back("right_knee_servo_link_joint");
+  joints_.name.push_back("right_foot_joint");
+  for (int j = 0; j < joints_.name.size(); ++j) {
+    joints_.position.push_back(0.0);
+  }
+}
+
+void MartyCore::setupOdometry() {
+  try {
+    l_foot_tf_ = tf_buff_.lookupTransform("base_link", "left_foot",
+                                          ros::Time(0));
+    r_foot_tf_ = tf_buff_.lookupTransform("base_link", "right_foot",
+                                          ros::Time(0));
+    odom_tf_.header.frame_id = "odom";
+    odom_tf_.child_frame_id = "base_link";
+    odom_tf_.transform.translation.x = 0;
+    odom_tf_.transform.translation.y = 0;
+    odom_tf_.transform.translation.z = 0;
+    odom_tf_.transform.rotation.x = 0;
+    odom_tf_.transform.rotation.y = 0;
+    odom_tf_.transform.rotation.z = 0;
+    odom_tf_.transform.rotation.w = 1;
+    odom_setup_ = true;
+  } catch (tf2::TransformException& ex) { ROS_WARN("%s", ex.what()); }
+}
+
+void MartyCore::jointCB(const marty_msgs::ServoMsg::ConstPtr& msg) {
+  this->updateJointState(*msg);
+}
+
+void MartyCore::jointsCB(const marty_msgs::ServoMsgArray::ConstPtr& msg) {
+  for (int id = 0; id < msg->servo_msg.size(); ++id) {
+    this->updateJointState(msg->servo_msg[id]);
+  }
+}
+void MartyCore::updateJointState(marty_msgs::ServoMsg servo) {
+  // ROS_INFO_STREAM("ID: " << (int)msg->servo_id << " CMD: " <<
+  //                 (int)msg->servo_cmd);
+  if (servo.servo_id == 0) {
+    joints_.position[10] = ( (float)servo.servo_cmd
+                             - joint_[0].cmdZero ) / 123.3;       // LHIP
+    joints_.position[7] = joints_.position[10];                   // LHIP1
+    joints_.position[8] = joints_.position[10];                   // LHIP2
+    joints_.position[9] = joints_.position[10];                   // LHIP3
+    joints_.position[11] = -joints_.position[10];                 // LKNEEBox
+  } else if (servo.servo_id == 1) {
+    joints_.position[12] = -( (float)servo.servo_cmd
+                              - joint_[1].cmdZero ) / 123.3;       // LTWIST
+  } else if (servo.servo_id == 2) {
+    joints_.position[16] = -( (float)servo.servo_cmd
+                              - joint_[2].cmdZero ) / 123.3;      // LKNEE
+    joints_.position[13] = joints_.position[16];                  // LKNEE1
+    joints_.position[14] = joints_.position[16];                  // LKNEE2
+    joints_.position[15] = joints_.position[16];                  // LKNEE3
+    joints_.position[17] = -joints_.position[16];                 // LFOOT
+  } else if (servo.servo_id == 3) {
+    joints_.position[21] = ( (float)servo.servo_cmd
+                             - joint_[3].cmdZero ) / 123.3;       // RHIP
+    joints_.position[18] = joints_.position[21];                  // RHIP1
+    joints_.position[19] = joints_.position[21];                  // RHIP2
+    joints_.position[20] = joints_.position[21];                  // RHIP3
+    joints_.position[22] = -joints_.position[21];                 // RKNEEBox
+  } else if (servo.servo_id == 4) {
+    joints_.position[23] = -( (float)servo.servo_cmd
+                              - joint_[4].cmdZero ) / 123.3;       // RTWIST
+  } else if (servo.servo_id == 5) {
+    joints_.position[27] = -( (float)servo.servo_cmd
+                              - joint_[5].cmdZero ) / 123.3;      // RKNEE
+    joints_.position[24] = joints_.position[27];                  // RKNEE1
+    joints_.position[25] = joints_.position[27];                  // RKNEE2
+    joints_.position[26] = joints_.position[27];                  // RKNEE3
+    joints_.position[28] = -joints_.position[27];                 // RFOOT
+  } else if (servo.servo_id == 6) {
+    joints_.position[1] = ( (float)servo.servo_cmd
+                            - joint_[6].cmdZero ) / 123.3;        // LARM-Gear
+    joints_.position[2] = -joints_.position[1] * 1.1875;          // LARM
+  } else if (servo.servo_id == 7) {
+    joints_.position[3] = ( (float)servo.servo_cmd
+                            - joint_[7].cmdZero ) / 123.3;       // RARM-Gear
+    joints_.position[4] = -joints_.position[3] * 1.1875;          // RARM
+  } else if (servo.servo_id == 8) {
+    joints_.position[6] = ( (float)servo.servo_cmd
+                            - joint_[8].cmdZero ) / 123.3;        // EYE-Left
+    joints_.position[5] = -joints_.position[6];                   // EYE-Right
+  }
 }
 
 void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
@@ -150,9 +270,70 @@ void MartyCore::gpioCB(const marty_msgs::GPIOs::ConstPtr& msg) {
   gpios_val_ = *msg;
 }
 
+void MartyCore::updateOdom() {
+  if (!odom_setup_) {
+    this->setupOdometry();
+  } else {
+    geometry_msgs::TransformStamped l_foot_tf;
+    geometry_msgs::TransformStamped r_foot_tf;
+    geometry_msgs::Transform tf_diff;
+
+    try {
+      l_foot_tf = tf_buff_.lookupTransform("base_link", "left_foot", ros::Time(0));
+      r_foot_tf = tf_buff_.lookupTransform("base_link", "right_foot", ros::Time(0));
+    } catch (tf2::TransformException& ex) { ROS_WARN("%s", ex.what()); }
+    if (l_foot_tf.transform.translation.z < r_foot_tf.transform.translation.z) {
+      // Left Foot Down
+      tf_diff.translation.x = l_foot_tf_.transform.translation.x -
+                              l_foot_tf.transform.translation.x;
+      tf_diff.translation.y = l_foot_tf_.transform.translation.y -
+                              l_foot_tf.transform.translation.y;
+      tf_diff.translation.z = l_foot_tf_.transform.translation.z -
+                              l_foot_tf.transform.translation.z;
+      tf_diff.rotation.x = l_foot_tf_.transform.rotation.x -
+                           l_foot_tf.transform.rotation.x;
+      tf_diff.rotation.y = l_foot_tf_.transform.rotation.y -
+                           l_foot_tf.transform.rotation.y;
+      tf_diff.rotation.z = l_foot_tf_.transform.rotation.z -
+                           l_foot_tf.transform.rotation.z;
+      tf_diff.rotation.w = l_foot_tf_.transform.rotation.w -
+                           l_foot_tf.transform.rotation.w;
+    } else {
+      // Right Foot Down
+      tf_diff.translation.x = r_foot_tf_.transform.translation.x -
+                              r_foot_tf.transform.translation.x;
+      tf_diff.translation.y = r_foot_tf_.transform.translation.y -
+                              r_foot_tf.transform.translation.y;
+      tf_diff.translation.z = r_foot_tf_.transform.translation.z -
+                              r_foot_tf.transform.translation.z;
+      tf_diff.rotation.x = r_foot_tf_.transform.rotation.x -
+                           r_foot_tf.transform.rotation.x;
+      tf_diff.rotation.y = r_foot_tf_.transform.rotation.y -
+                           r_foot_tf.transform.rotation.y;
+      tf_diff.rotation.z = r_foot_tf_.transform.rotation.z -
+                           r_foot_tf.transform.rotation.z;
+      tf_diff.rotation.w = r_foot_tf_.transform.rotation.w -
+                           r_foot_tf.transform.rotation.w;
+    }
+    l_foot_tf_ = l_foot_tf;
+    r_foot_tf_ = r_foot_tf;
+    odom_tf_.transform.translation.x += tf_diff.translation.x;
+    odom_tf_.transform.translation.y += tf_diff.translation.y;
+    odom_tf_.transform.translation.z += tf_diff.translation.z;
+    // ROS_INFO_STREAM("TFx: " << tf_diff.translation.x <<
+    //                 " TFy: " << tf_diff.translation.y <<
+    //                 " TFz: " << tf_diff.translation.z);
+  }
+}
+
 void MartyCore::tfCB(const ros::TimerEvent& e) {
+  joints_.header.stamp = ros::Time::now();
+  joints_pub_.publish(joints_);           // Publish Joint States
   cam_tf_.header.stamp = ros::Time::now();
-  tf_br_.sendTransform(cam_tf_);
+  tf_br_.sendTransform(cam_tf_);          // Camera transformation
+  odom_tf_.header.stamp = ros::Time::now();
+  this->updateOdom();
+  odom_br_.sendTransform(odom_tf_);       // Odometry transformation
 }
 
 void MartyCore::readySound() {
@@ -179,6 +360,7 @@ void MartyCore::setServoJointPos(std::string name, int pos) {
   catch (const std::exception& e) {std::cerr << e.what();};
   servo_msg_.servo_cmd = pos;
   servo_pub_.publish(servo_msg_);
+  ros::spinOnce();
 }
 
 void MartyCore::setServoPos(int channel, int pos) {
@@ -202,6 +384,7 @@ bool MartyCore::setServo(int id, float angle) {
   servo_msg_.servo_id = id;
   servo_msg_.servo_cmd = jointPosToServoCmd(id, angle);
   servo_pub_.publish(servo_msg_);
+  ros::spinOnce();
   jangles_[id] = angle;
   return true;
 }
