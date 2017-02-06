@@ -60,9 +60,9 @@ void MartyCore::init() {
   // TF
   cam_tf_.header.frame_id = "base_link";
   cam_tf_.child_frame_id = "camera";
-  cam_tf_.transform.translation.x = 0.02;
+  cam_tf_.transform.translation.x = 0.023;
   cam_tf_.transform.translation.y = 0.0;
-  cam_tf_.transform.translation.z = 0.01;
+  cam_tf_.transform.translation.z = 0.027;
   // tf2::Quaternion q(-0.54168, 0.54168, -0.45452, 0.45452);
   // tf2::Quaternion q(-0.596, 0.596, -0.380, 0.380); // 25 deg
   tf2::Quaternion q(-0.627, 0.627, -0.327, 0.327); // 35 deg
@@ -188,6 +188,7 @@ void MartyCore::jointsCB(const marty_msgs::ServoMsgArray::ConstPtr& msg) {
     this->updateJointState(msg->servo_msg[id]);
   }
 }
+
 void MartyCore::updateJointState(marty_msgs::ServoMsg servo) {
   // ROS_INFO_STREAM("ID: " << (int)msg->servo_id << " CMD: " <<
   //                 (int)msg->servo_cmd);
@@ -260,6 +261,24 @@ void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
     }
     falling_pub_.publish(falling_);
   }
+  double roll = atan2(accel_.y, accel_.x) - 1.57;
+  double pitch = atan2(accel_.y, accel_.z) - 1.57;
+  double yaw = atan2(accel_.z, accel_.x);
+  roll = roundf(100.0 * roll) / 100.0;
+  pitch = roundf(100.0 * pitch) / 100.0;
+  yaw = roundf(100.0 * yaw) / 100.0;
+  roll_.push_front(roll); pitch_.push_front(pitch); yaw_.push_front(yaw);
+  int s = roll_.size();
+  for (int i = 1; i < s; ++i) {
+    roll += roll_[i]; pitch += pitch_[i]; yaw += yaw_[i];
+  }
+  roll = roll / s; pitch = pitch / s; yaw = yaw / s;
+  roll_.resize(3); pitch_.resize(3); yaw_.resize(3);
+  ROS_INFO_STREAM("R: " << (roll * 180) / 3.1415 <<
+                  " P: " << (pitch * 180) / 3.1415 <<
+                  " Y: " << (yaw * 180) / 3.1415);
+  quat_ori_.setRPY(roll, -pitch, 0); //  Yaw Gimbal Lock
+  quat_ori_.normalize();
 }
 
 void MartyCore::battCB(const std_msgs::Float32::ConstPtr& msg) {
@@ -320,6 +339,21 @@ void MartyCore::updateOdom() {
     odom_tf_.transform.translation.x += tf_diff.translation.x;
     odom_tf_.transform.translation.y += tf_diff.translation.y;
     odom_tf_.transform.translation.z += tf_diff.translation.z;
+    tf2::Quaternion q1 (odom_tf_.transform.rotation.x + tf_diff.rotation.x,
+                        odom_tf_.transform.rotation.y + tf_diff.rotation.y,
+                        odom_tf_.transform.rotation.z + tf_diff.rotation.z,
+                        odom_tf_.transform.rotation.w + tf_diff.rotation.w);
+    q1.normalize();
+    odom_tf_.transform.rotation.x = q1.x();
+    odom_tf_.transform.rotation.y = q1.y();
+    odom_tf_.transform.rotation.z = q1.z();
+    odom_tf_.transform.rotation.w = q1.w();
+
+    // odom_tf_.transform.rotation.x = quat_ori_.x();
+    // odom_tf_.transform.rotation.y = quat_ori_.y();
+    // odom_tf_.transform.rotation.z = quat_ori_.z();
+    // odom_tf_.transform.rotation.w = quat_ori_.w();
+
     // ROS_INFO_STREAM("TFx: " << tf_diff.translation.x <<
     //                 " TFy: " << tf_diff.translation.y <<
     //                 " TFz: " << tf_diff.translation.z);

@@ -88,7 +88,6 @@ class MartyCore {
   void gpioCB(const marty_msgs::GPIOs::ConstPtr& msg);
   void tfCB(const ros::TimerEvent& e);
 
-
   void updateJointState(marty_msgs::ServoMsg servo);
   void updateOdom();
   bool setFallDetector(std_srvs::SetBool::Request&  req,
@@ -109,6 +108,9 @@ class MartyCore {
   std_msgs::Bool falling_;
   float battery_val_;
   marty_msgs::GPIOs gpios_val_;
+  std::deque<double> roll_;
+  std::deque<double> pitch_;
+  std::deque<double> yaw_;
 
   // ROS
   std_msgs::Bool enable_robot_;
@@ -117,6 +119,7 @@ class MartyCore {
   // marty_msgs::ServoMsgArray servo_msg_array_;
   geometry_msgs::TransformStamped cam_tf_;
   geometry_msgs::TransformStamped odom_tf_;
+  geometry_msgs::TransformStamped odom_combined_tf_;
   geometry_msgs::TransformStamped l_foot_tf_;
   geometry_msgs::TransformStamped r_foot_tf_;
 
@@ -136,6 +139,7 @@ class MartyCore {
   ros::ServiceClient get_gpio_config_;
 
   // TF
+  tf2::Quaternion quat_ori_;
   tf2_ros::TransformBroadcaster tf_br_;
   tf2_ros::TransformBroadcaster odom_br_;
   tf2_ros::Buffer tf_buff_;
