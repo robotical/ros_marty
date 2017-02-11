@@ -8,6 +8,6 @@
       <param name="launched" value="true"/>
     </node>
   </group>
-  <param name="robot_description" textfile="$(find ros_marty)/urdf/marty.urdf" />
+  <param name="robot_description" textfile="$(find marty_description)/urdf/marty.urdf" />
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
 </launch>
