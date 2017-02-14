@@ -464,7 +464,7 @@ bool Trajectory::setPointsLeanForward(data_t& tSetpoints, int leanAmount,
   deque <float> tline(tSetpoints.back());
 
   tline[0] += period;
-  tline[1 + RHIP] = -leanAmount; tline[1 + LHIP] = -leanAmount;
+  tline[1 + RHIP] = leanAmount; tline[1 + LHIP] = leanAmount;
   tSetpoints.push_back(tline);
 
   return 1;
@@ -475,7 +475,7 @@ bool Trajectory::setPointsLeanBackward(data_t& tSetpoints, int leanAmount,
   deque <float> tline(tSetpoints.back());
 
   tline[0] += period;
-  tline[1 + RHIP] = leanAmount; tline[1 + LHIP] = leanAmount;
+  tline[1 + RHIP] = -leanAmount; tline[1 + LHIP] = -leanAmount;
   tSetpoints.push_back(tline);
 
   return 1;
