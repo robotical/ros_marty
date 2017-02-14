@@ -42,8 +42,10 @@ void MartyCore::loadParams() {
   }
 
   ros::param::param("/marty/check_fall", fall_disable_, true);
-  ros::param::param("/marty/fall_threshold", acc_thr_, 0.9);
-  ros::param::param("/marty/camera_ori", camera_ori_, 15.0);
+  ros::param::param("/marty/fall_threshold", fall_thr_, 0.9);
+  ros::param::param("/marty/odom_accel", odom_accel_, true);
+  ros::param::param("/marty/camera", camera_, false);
+  if (camera_) {ros::param::param("/marty/camera_ori", camera_ori_, 15.0);}
 
   marty_msgs::ServoMsg joint;
   for (int id = 0; id < NUMJOINTS; ++id) {
@@ -57,31 +59,28 @@ void MartyCore::init() {
   falling_.data = false;
   odom_setup_ = false;
   for (int ji = 0; ji < NUMJOINTS; ji++) { jangles_.push_back(0); }
-  // TF
-  cam_tf_.header.frame_id = "base_link";
-  cam_tf_.child_frame_id = "camera";
-  cam_tf_.transform.translation.x = 0.023;
-  cam_tf_.transform.translation.y = 0.0;
-  cam_tf_.transform.translation.z = 0.027;
-  // tf2::Quaternion q(-0.54168, 0.54168, -0.45452, 0.45452);
-  // tf2::Quaternion q(-0.596, 0.596, -0.380, 0.380); // 25 deg
-  tf2::Quaternion q(-0.627, 0.627, -0.327, 0.327); // 35 deg
 
-  // double ori = ((90 - camera_ori_) / 180) * M_PI;
-  // ROS_INFO_STREAM("CamOri: " << camera_ori_ << " ORI: " << ori << " PI: " <<
-  //                 M_PI);
-  // q.setRPY(-M_PI, ori, (M_PI / 2)); // TODO: This is borked
-  // ROS_INFO_STREAM("X: " << q.x() << " Y: " << q.y() <<
-  //                 " Z: " << q.z() << " W: " << q.w());
-  // cam_tf_.transform.rotation.x = q.x();
-  // cam_tf_.transform.rotation.y = q.y();
-  // cam_tf_.transform.rotation.z = q.z();
-  // cam_tf_.transform.rotation.w = q.w();
-  q.normalize();
-  cam_tf_.transform.rotation.x = q.x();
-  cam_tf_.transform.rotation.y = q.y();
-  cam_tf_.transform.rotation.z = q.z();
-  cam_tf_.transform.rotation.w = q.w();
+  // Camera TF
+  if (camera_) {
+    cam_tf_.header.frame_id = "base_link";
+    cam_tf_.child_frame_id = "camera";
+    cam_tf_.transform.translation.x = 0.023;
+    cam_tf_.transform.translation.y = 0.0;
+    cam_tf_.transform.translation.z = 0.027;
+    // tf2::Quaternion q(-0.54168, 0.54168, -0.45452, 0.45452);
+    // tf2::Quaternion q(-0.596, 0.596, -0.380, 0.380); // 25 deg
+    tf2::Quaternion q(-0.627, 0.627, -0.327, 0.327); // 35 deg
+    q.normalize();
+    cam_tf_.transform.rotation = tf2::toMsg(q);
+    // double ori = ((90 - camera_ori_) / 180) * M_PI;
+    // ROS_INFO_STREAM("CamOri: " << camera_ori_ << " ORI: " << ori <<
+    // " PI: " << M_PI);
+    // q.setRPY(-M_PI, ori, (M_PI / 2)); // TODO: This is borked
+    // ROS_INFO_STREAM("X: " << q.x() << " Y: " << q.y() <<
+    //                 " Z: " << q.z() << " W: " << q.w());
+    // cam_tf_.transform.rotation.x = tf2::toMsg(q);
+  }
+
   // Odom TF
   odom_tf_.header.frame_id = "odom";
   odom_tf_.child_frame_id = "base_link";
@@ -127,10 +126,11 @@ void MartyCore::rosSetup() {
   // if (set_gpio_config_.call(srv)) {
   //   if (srv.response.success) {ROS_INFO("SUCCESS!");} else {ROS_WARN("NAY!");}
   // } else { ROS_ERROR("Failed to call set gpio service!"); }
+  // TIMERS
   tf_timer_ = nh_.createTimer(ros::Duration(0.1), &MartyCore::tfCB, this);
 }
 
-bool MartyCore::setFallDetector(std_srvs::SetBool::Request&  req,
+bool MartyCore::setFallDetector(std_srvs::SetBool::Request& req,
                                 std_srvs::SetBool::Response& res) {
   fall_disable_ = req.data; res.success = true; return true;
 }
@@ -188,75 +188,79 @@ void MartyCore::jointsCB(const marty_msgs::ServoMsgArray::ConstPtr& msg) {
   }
 }
 
+/**
+ * @brief Updates the joint state positions of every joint given servo cmds
+ * @details This function is called on every callback that updates a joint
+ * position, and publishes the appropriate updates to the joint_states topic.
+ *
+ * @param servo The servo cmd message (Id and Position)
+ */
 void MartyCore::updateJointState(marty_msgs::ServoMsg servo) {
-  // ROS_INFO_STREAM("ID: " << (int)msg->servo_id << " CMD: " <<
-  //                 (int)msg->servo_cmd);
   if (servo.servo_id == 0) {
-    joints_.position[10] = ( (float)servo.servo_cmd
-                             - joint_[0].cmdZero ) / 123.3;       // LHIP
+    joints_.position[10] =
+      ( (float)servo.servo_cmd - joint_[0].cmdZero ) / 123.3;     // LHIP
     joints_.position[7] = joints_.position[10];                   // LHIP1
     joints_.position[8] = joints_.position[10];                   // LHIP2
     joints_.position[9] = joints_.position[10];                   // LHIP3
     joints_.position[11] = -joints_.position[10];                 // LKNEEBox
   } else if (servo.servo_id == 1) {
-    joints_.position[12] = -( (float)servo.servo_cmd
-                              - joint_[1].cmdZero ) / 123.3;       // LTWIST
+    joints_.position[12] =
+      -( (float)servo.servo_cmd - joint_[1].cmdZero ) / 123.3;    // LTWIST
   } else if (servo.servo_id == 2) {
-    joints_.position[16] = -( (float)servo.servo_cmd
-                              - joint_[2].cmdZero ) / 123.3;      // LKNEE
+    joints_.position[16] =
+      -( (float)servo.servo_cmd - joint_[2].cmdZero ) / 123.3;    // LKNEE
     joints_.position[13] = joints_.position[16];                  // LKNEE1
     joints_.position[14] = joints_.position[16];                  // LKNEE2
     joints_.position[15] = joints_.position[16];                  // LKNEE3
     joints_.position[17] = -joints_.position[16];                 // LFOOT
   } else if (servo.servo_id == 3) {
-    joints_.position[21] = ( (float)servo.servo_cmd
-                             - joint_[3].cmdZero ) / 123.3;       // RHIP
+    joints_.position[21] =
+      ( (float)servo.servo_cmd - joint_[3].cmdZero ) / 123.3;     // RHIP
     joints_.position[18] = joints_.position[21];                  // RHIP1
     joints_.position[19] = joints_.position[21];                  // RHIP2
     joints_.position[20] = joints_.position[21];                  // RHIP3
     joints_.position[22] = -joints_.position[21];                 // RKNEEBox
   } else if (servo.servo_id == 4) {
-    joints_.position[23] = -( (float)servo.servo_cmd
-                              - joint_[4].cmdZero ) / 123.3;       // RTWIST
+    joints_.position[23] =
+      -( (float)servo.servo_cmd - joint_[4].cmdZero ) / 123.3;    // RTWIST
   } else if (servo.servo_id == 5) {
-    joints_.position[27] = -( (float)servo.servo_cmd
-                              - joint_[5].cmdZero ) / 123.3;      // RKNEE
+    joints_.position[27] =
+      -( (float)servo.servo_cmd - joint_[5].cmdZero ) / 123.3;    // RKNEE
     joints_.position[24] = joints_.position[27];                  // RKNEE1
     joints_.position[25] = joints_.position[27];                  // RKNEE2
     joints_.position[26] = joints_.position[27];                  // RKNEE3
     joints_.position[28] = -joints_.position[27];                 // RFOOT
   } else if (servo.servo_id == 6) {
-    joints_.position[1] = ( (float)servo.servo_cmd
-                            - joint_[6].cmdZero ) / 123.3;        // LARM-Gear
+    joints_.position[1] =
+      ( (float)servo.servo_cmd - joint_[6].cmdZero ) / 123.3;     // LARM-Gear
     joints_.position[2] = -joints_.position[1] * 1.1875;          // LARM
   } else if (servo.servo_id == 7) {
-    joints_.position[3] = ( (float)servo.servo_cmd
-                            - joint_[7].cmdZero ) / 123.3;       // RARM-Gear
+    joints_.position[3] =
+      ( (float)servo.servo_cmd - joint_[7].cmdZero ) / 123.3;     // RARM-Gear
     joints_.position[4] = -joints_.position[3] * 1.1875;          // RARM
   } else if (servo.servo_id == 8) {
-    joints_.position[6] = ( (float)servo.servo_cmd
-                            - joint_[8].cmdZero ) / 123.3;        // EYE-Left
+    joints_.position[6] =
+      ( (float)servo.servo_cmd - joint_[8].cmdZero ) / 123.3;     // EYE-Left
     joints_.position[5] = -joints_.position[6];                   // EYE-Right
   }
 }
 
 void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
   accel_ = *msg;
-  if ((accel_.y < acc_thr_) && (falling_.data == false)) {
+  // Check if Robot is falling
+  if ((accel_.y < fall_thr_) && (falling_.data == false)) {
     ROS_WARN_STREAM("Robot Falling! " << accel_.y << std::endl);
     falling_.data = true;
     if (fall_disable_) {
-      enable_robot_.data = false;
-      enable_pub_.publish(enable_robot_);
+      enable_robot_.data = false; enable_pub_.publish(enable_robot_);
     }
     falling_pub_.publish(falling_);
   }
-  if ((accel_.y > acc_thr_) && (falling_.data == true)) {
+  if ((accel_.y > fall_thr_) && (falling_.data == true)) {
     ROS_WARN_STREAM("Robot Stable! " << accel_.y << std::endl);
     falling_.data = false;
     if (fall_disable_) {
-      enable_robot_.data = true;
-      enable_pub_.publish(enable_robot_);
+      enable_robot_.data = true; enable_pub_.publish(enable_robot_);
     }
     falling_pub_.publish(falling_);
   }
@@ -369,10 +373,11 @@ void MartyCore::updateOdom() {
 }
 
 void MartyCore::tfCB(const ros::TimerEvent& e) {
-  cam_tf_.header.stamp = ros::Time::now();
-  tf_br_.sendTransform(cam_tf_);          // Camera transformation
   // Publish Joint States
   joints_.header.stamp = ros::Time::now(); joints_pub_.publish(joints_);
+  if (camera_) {  // Camera transformation
+    cam_tf_.header.stamp = ros::Time::now(); tf_br_.sendTransform(cam_tf_);
+  }
   // Odometry transformation
   this->updateOdom();
   odom_tf_.header.stamp = ros::Time::now(); odom_br_.sendTransform(odom_tf_);

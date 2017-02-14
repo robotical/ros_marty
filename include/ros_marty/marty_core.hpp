@@ -17,6 +17,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 // Messages
 #include <std_msgs/Bool.h>
@@ -94,15 +95,16 @@ class MartyCore {
                        std_srvs::SetBool::Response& res);
 
   // Flags
-  bool odom_setup_;
+  bool calibrated_;     // Check whether Marty has been calibrated yet
+  bool odom_setup_;     // Check whether odometry tfs have been setup
 
   // Parameters
-  bool calibrated_;
-  bool fall_disable_; //  Whether to disable robot if fallen
-  double acc_thr_;
+  bool fall_disable_;   // If true disables motor commands when fallen
+  double fall_thr_;     // Threshold for determining if Marty is falling
   bool odom_accel_;     // Combine accelerometer data with odometry
   // double batt_thr_;
-  double camera_ori_;
+  bool camera_;         // If true camera tf and functions are enabled
+  double camera_ori_;   // Camera orientation relative to base_link
 
   // Variables
   marty_msgs::Accelerometer accel_;
