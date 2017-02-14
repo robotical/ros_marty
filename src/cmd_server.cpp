@@ -524,7 +524,9 @@ void CmdServer::waitForCmd() {
         dbytes.push_back(buffer[i]);
       }
       ROS_DEBUG("Running Command\n");
-      if (robot_->hasFallen() && robot_->fallDisabled()) {
+      bool get = false;
+      if (dbytes[0] == CMD_GET) { get = true; }
+      if (robot_->hasFallen() && robot_->fallDisabled() && !get) {
         ROS_WARN("Marty has fallen over! Please pick him up and try again.");
         resp_msg = "Fallen";
       } else {
