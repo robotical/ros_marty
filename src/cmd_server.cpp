@@ -1,3 +1,11 @@
+/**
+ * @file      cmd_server.cpp
+ * @brief     CMD Server for Marty, enabling execution of CMDs remotely
+ * @author    Alejandro Bordallo <alex.bordallo@robotical.io>
+ * @date      2016-02-06
+ * @copyright (Apache) 2016 Robotical Ltd.
+ */
+
 #include "ros_marty/cmd_server.hpp"
 
 using namespace Trajectory;
@@ -8,14 +16,9 @@ using namespace Trajectory;
 void CmdServer::robotReady() {
   if (ready_move_) {
     robot_->enableRobot();
-    data_t tSetpoints, tInterp;
-    deque <float> tline(NUMJOINTS + 1, 0);
-    tSetpoints.push_back(tline);
-    setPointsLeanLeft(tSetpoints, 30, 0.5);
-    setPointsLeanRight(tSetpoints, 30, 1.0);
-    setPointsLegsZero(tSetpoints, 0.5);
-    interpTrajectory(tSetpoints, tInterp, 0.05);
-    runTrajectory(robot_, tInterp);
+    this->lean(CMD_LEFT, 30, 500);
+    this->lean(CMD_RIGHT, 30, 1000);
+    this->standStraight(500);
 
     sleepms(stop_wait);
     robot_->setServo(EYES, EYES_ANGRY);
@@ -78,6 +81,8 @@ void CmdServer::runCommand(vector<int> data) {
     if (l == 2) {sideStep(data[1]);} if (l == 3) {sideStep(data[1], data[2]);}
     if (l == 4) {sideStep(data[1], data[2], data[3]);}
     if (l == 5) {sideStep(data[1], data[2], data[3], data[4]);} break;
+  case CMD_STRAIGHT:
+    if (l == 1) {standStraight();} if (l == 2) {standStraight(data[1]);}
   case CMD_SOUND: if (l == 2) {playSound(data[1]);}
     if (l == 3) {playSound(data[1], data[2]);} break;
   case CMD_STOP: stopRobot(); break;
@@ -217,7 +222,8 @@ void CmdServer::moveJoint(int side, int joint, int amount, int move_time) {
     tline[1 + EYES] = (float)amount;
   }
   tline[0] = ((float)move_time) / 1000; tSetpoints.push_back(tline);
-  interpTrajectory(tSetpoints, tInterp, 0.05); runTrajectory(robot_, tInterp);
+  interpTrajectory(tSetpoints, tInterp, interp_dt_);
+  runTrajectory(robot_, tInterp);
 }
 
 void CmdServer::lean(int dir, int amount, int move_time) {
@@ -228,7 +234,8 @@ void CmdServer::lean(int dir, int amount, int move_time) {
   if (dir == CMD_RIGHT) {setPointsLeanRight(tSetpoints, amount, lean_time);}
   if (dir == CMD_FORW) {setPointsLeanForward(tSetpoints, amount, lean_time);}
   if (dir == CMD_BACK) {setPointsLeanBackward(tSetpoints, amount, lean_time);}
-  interpTrajectory(tSetpoints, tInterp, 0.05); runTrajectory(robot_, tInterp);
+  interpTrajectory(tSetpoints, tInterp, interp_dt_);
+  runTrajectory(robot_, tInterp);
 }
 
 void CmdServer::celebrate(int move_time) {
@@ -250,7 +257,8 @@ void CmdServer::liftLeg(int leg, int amount, int move_time) {
     tline[1 + RKNEE] = tline[1 + LKNEE] - (float)amount;
   }
   tline[0] = ((float)move_time) / 1000; tSetpoints.push_back(tline);
-  interpTrajectory(tSetpoints, tInterp, 0.05); runTrajectory(robot_, tInterp);
+  interpTrajectory(tSetpoints, tInterp, interp_dt_);
+  runTrajectory(robot_, tInterp);
 }
 
 // This will lower whichever leg is higher to the ground
@@ -277,7 +285,8 @@ void CmdServer::lowerLeg(int move_time) {
     }
   }
   tline[0] = ((float)move_time) / 1000; tSetpoints.push_back(tline);
-  interpTrajectory(tSetpoints, tInterp, 0.05); runTrajectory(robot_, tInterp);
+  interpTrajectory(tSetpoints, tInterp, interp_dt_);
+  runTrajectory(robot_, tInterp);
 }
 
 void CmdServer::dance(int robot_id) {
@@ -417,6 +426,15 @@ void CmdServer::sideStep(int side, int num_steps, int movetime,
   } else { ROS_ERROR("Can only sidestep left or right"); }
 }
 
+void CmdServer::standStraight(int movetime) {
+  data_t tSetpoints, tInterp; deque<float> tline(robot_->jangles_);
+  tline.push_front(0); tSetpoints.push_back(tline);
+  float straight_time = ((float)movetime) / 1000;
+  setPointsLegsZero(tSetpoints, straight_time);
+  interpTrajectory(tSetpoints, tInterp, interp_dt_);
+  runTrajectory(robot_, tInterp);
+}
+
 void CmdServer::playSound(int frequency, int duration) {
   robot_->playSound(frequency, (float)duration / 1000);
 }
@@ -461,6 +479,7 @@ void CmdServer::init() {
   busy_ = false;
   ros_cmd_ = false;
   resp_request_ = false;
+  interp_dt_ = 0.02;
 }
 
 void CmdServer::rosSetup() {

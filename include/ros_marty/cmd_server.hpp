@@ -1,6 +1,6 @@
 /**
  * @file      cmd_server.hpp
- * @brief     CMD Server for Marty, allowing execution of CMDs remotely
+ * @brief     CMD Server for Marty, enabling execution of CMDs remotely
  * @author    Alejandro Bordallo <alex.bordallo@robotical.io>
  * @date      2016-02-06
  * @copyright (Apache) 2016 Robotical Ltd.
@@ -73,6 +73,7 @@ enum Commands {
   CMD_DEMO,
   CMD_GET,
   CMD_SIDESTEP,
+  CMD_STRAIGHT,
   CMD_SOUND,
   CMD_STOP
 };
@@ -111,6 +112,7 @@ class CmdServer {
   void moveJoint(int side, int joint, int amount, int movetime = 2000);
   void sideStep(int side, int num_steps = 1, int movetime = 1000,
                 int step_length = 50);
+  void standStraight(int movetime = 1000);
   void playSound(int freq = 440, int duration = 500);
   void stopRobot();
   void walk(int num_steps = 2, int turn = 0,
@@ -135,6 +137,7 @@ class CmdServer {
   // Variables
   MartyCore* robot_;
   int sock_;
+  float interp_dt_;
   std::vector<int> cmd_data_;
   std::vector<std::vector<int> > cmd_queue_;
   float val_request_;
