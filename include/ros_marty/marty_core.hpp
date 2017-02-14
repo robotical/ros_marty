@@ -100,6 +100,7 @@ class MartyCore {
   bool calibrated_;
   bool fall_disable_; //  Whether to disable robot if fallen
   double acc_thr_;
+  bool odom_accel_;     // Combine accelerometer data with odometry
   // double batt_thr_;
   double camera_ori_;
 
@@ -119,9 +120,8 @@ class MartyCore {
   // marty_msgs::ServoMsgArray servo_msg_array_;
   geometry_msgs::TransformStamped cam_tf_;
   geometry_msgs::TransformStamped odom_tf_;
-  geometry_msgs::TransformStamped odom_combined_tf_;
-  geometry_msgs::TransformStamped l_foot_tf_;
-  geometry_msgs::TransformStamped r_foot_tf_;
+  geometry_msgs::TransformStamped l_f_tf_;
+  geometry_msgs::TransformStamped r_f_tf_;
 
   ros::Publisher  enable_pub_;
   ros::Publisher  falling_pub_;
@@ -139,6 +139,7 @@ class MartyCore {
   ros::ServiceClient get_gpio_config_;
 
   // TF
+  double r_, p_, y_;
   tf2::Quaternion quat_ori_;
   tf2_ros::TransformBroadcaster tf_br_;
   tf2_ros::TransformBroadcaster odom_br_;

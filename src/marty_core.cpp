@@ -82,6 +82,16 @@ void MartyCore::init() {
   cam_tf_.transform.rotation.y = q.y();
   cam_tf_.transform.rotation.z = q.z();
   cam_tf_.transform.rotation.w = q.w();
+  // Odom TF
+  odom_tf_.header.frame_id = "odom";
+  odom_tf_.child_frame_id = "base_link";
+  odom_tf_.transform.translation.x = 0;
+  odom_tf_.transform.translation.y = 0;
+  odom_tf_.transform.translation.z = 0;
+  odom_tf_.transform.rotation.x = 0;
+  odom_tf_.transform.rotation.y = 0;
+  odom_tf_.transform.rotation.z = 0;
+  odom_tf_.transform.rotation.w = 1;
   this->setupJointStates();
 }
 
@@ -161,20 +171,9 @@ void MartyCore::setupJointStates() {
 }
 
 void MartyCore::setupOdometry() {
-  try {
-    l_foot_tf_ = tf_buff_.lookupTransform("base_link", "left_foot",
-                                          ros::Time(0));
-    r_foot_tf_ = tf_buff_.lookupTransform("base_link", "right_foot",
-                                          ros::Time(0));
-    odom_tf_.header.frame_id = "odom";
-    odom_tf_.child_frame_id = "base_link";
-    odom_tf_.transform.translation.x = 0;
-    odom_tf_.transform.translation.y = 0;
-    odom_tf_.transform.translation.z = 0;
-    odom_tf_.transform.rotation.x = 0;
-    odom_tf_.transform.rotation.y = 0;
-    odom_tf_.transform.rotation.z = 0;
-    odom_tf_.transform.rotation.w = 1;
+  try {   // Wait until transformation data from feet is received
+    l_f_tf_ = tf_buff_.lookupTransform("base_link", "left_foot", ros::Time(0));
+    r_f_tf_ = tf_buff_.lookupTransform("base_link", "right_foot", ros::Time(0));
     odom_setup_ = true;
   } catch (tf2::TransformException& ex) { ROS_WARN("%s", ex.what()); }
 }
@@ -261,12 +260,11 @@ void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
     }
     falling_pub_.publish(falling_);
   }
+  // Obtain Roll, Pitch and Yaw angles from accelerometer data
   double roll = atan2(accel_.y, accel_.x) - 1.57;
   double pitch = atan2(accel_.y, accel_.z) - 1.57;
   double yaw = atan2(accel_.z, accel_.x);
-  roll = roundf(100.0 * roll) / 100.0;
-  pitch = roundf(100.0 * pitch) / 100.0;
-  yaw = roundf(100.0 * yaw) / 100.0;
+  // Perform moving window average to filter accelerator noise
   roll_.push_front(roll); pitch_.push_front(pitch); yaw_.push_front(yaw);
   int s = roll_.size();
   for (int i = 1; i < s; ++i) {
@@ -274,11 +272,7 @@ void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
   }
   roll = roll / s; pitch = pitch / s; yaw = yaw / s;
   roll_.resize(3); pitch_.resize(3); yaw_.resize(3);
-  ROS_INFO_STREAM("R: " << (roll * 180) / 3.1415 <<
-                  " P: " << (pitch * 180) / 3.1415 <<
-                  " Y: " << (yaw * 180) / 3.1415);
-  quat_ori_.setRPY(roll, -pitch, 0); //  Yaw Gimbal Lock
-  quat_ori_.normalize();
+  r_ = roll; p_ = -pitch;   // Yaw discarded due to gimbal lock
 }
 
 void MartyCore::battCB(const std_msgs::Float32::ConstPtr& msg) {
@@ -289,85 +283,99 @@ void MartyCore::gpioCB(const marty_msgs::GPIOs::ConstPtr& msg) {
   gpios_val_ = *msg;
 }
 
+/**
+ * @brief This function updates the Odometry given Marty's motion and sensors
+ * @details Marty uses joint state data to estimate its pose as it moves. The
+ * change in position of the feet (Assuming the base_link of the robot moves
+ * inversely to the foot on the ground)
+ */
 void MartyCore::updateOdom() {
   if (!odom_setup_) {
     this->setupOdometry();
   } else {
-    geometry_msgs::TransformStamped l_foot_tf;
-    geometry_msgs::TransformStamped r_foot_tf;
-    geometry_msgs::Transform tf_diff;
+    geometry_msgs::TransformStamped l_f_tf, r_f_tf; // Left/Right Foot TFs
+    geometry_msgs::Transform tf_diff;  // TF change between time frames
+    double dy;  // Yaw change from previous timestep
 
-    try {
-      l_foot_tf = tf_buff_.lookupTransform("base_link", "left_foot", ros::Time(0));
-      r_foot_tf = tf_buff_.lookupTransform("base_link", "right_foot", ros::Time(0));
+    // Initialise transformations
+    tf_diff.translation.x = tf_diff.translation.y = tf_diff.translation.z = 0;
+    tf_diff.rotation.x = tf_diff.rotation.y = tf_diff.rotation.z = 0;
+    tf_diff.rotation.w = 1;
+    l_f_tf.transform = r_f_tf.transform = tf_diff;
+
+    try {   // Acquire latest feet transformation data
+      l_f_tf = tf_buff_.lookupTransform("base_link", "left_foot", ros::Time(0));
+      r_f_tf = tf_buff_.lookupTransform("base_link", "right_foot", ros::Time(0));
     } catch (tf2::TransformException& ex) { ROS_WARN("%s", ex.what()); }
-    if (l_foot_tf.transform.translation.z < r_foot_tf.transform.translation.z) {
-      // Left Foot Down
-      tf_diff.translation.x = l_foot_tf_.transform.translation.x -
-                              l_foot_tf.transform.translation.x;
-      tf_diff.translation.y = l_foot_tf_.transform.translation.y -
-                              l_foot_tf.transform.translation.y;
-      tf_diff.translation.z = l_foot_tf_.transform.translation.z -
-                              l_foot_tf.transform.translation.z;
-      tf_diff.rotation.x = l_foot_tf_.transform.rotation.x -
-                           l_foot_tf.transform.rotation.x;
-      tf_diff.rotation.y = l_foot_tf_.transform.rotation.y -
-                           l_foot_tf.transform.rotation.y;
-      tf_diff.rotation.z = l_foot_tf_.transform.rotation.z -
-                           l_foot_tf.transform.rotation.z;
-      tf_diff.rotation.w = l_foot_tf_.transform.rotation.w -
-                           l_foot_tf.transform.rotation.w;
+
+    // Calculate feet previous and current roll, pitch, yaw orientations
+    double rql_, pql_, yql_, rql, pql, yql, rqr_, pqr_, yqr_, rqr, pqr, yqr;
+    tf2::Quaternion ql_(l_f_tf_.transform.rotation.x, l_f_tf_.transform.rotation.y,
+                        l_f_tf_.transform.rotation.z, l_f_tf_.transform.rotation.w);
+    ql_.normalize(); tf2::Matrix3x3(ql_).getRPY(rql_, pql_, yql_);
+    tf2::Quaternion ql(l_f_tf.transform.rotation.x, l_f_tf.transform.rotation.y,
+                       l_f_tf.transform.rotation.z, l_f_tf.transform.rotation.w);
+    ql.normalize(); tf2::Matrix3x3(ql).getRPY(rql, pql, yql);
+    tf2::Quaternion qr_(r_f_tf_.transform.rotation.x, r_f_tf_.transform.rotation.y,
+                        r_f_tf_.transform.rotation.z, r_f_tf_.transform.rotation.w);
+    qr_.normalize(); tf2::Matrix3x3(qr_).getRPY(rqr_, pqr_, yqr_);
+    tf2::Quaternion qr(r_f_tf.transform.rotation.x, r_f_tf.transform.rotation.y,
+                       r_f_tf.transform.rotation.z, r_f_tf.transform.rotation.w);
+    qr.normalize(); tf2::Matrix3x3(qr).getRPY(rqr, pqr, yqr);
+
+    // Compute change in Translation and Yaw given foot on ground
+    if (l_f_tf.transform.translation.z < r_f_tf.transform.translation.z) {
+      dy = yql_ - yql; // Left Foot Down
+      tf_diff.translation.x =
+        l_f_tf_.transform.translation.x - l_f_tf.transform.translation.x;
+      tf_diff.translation.y =
+        l_f_tf_.transform.translation.y - l_f_tf.transform.translation.y;
+      tf_diff.translation.z =
+        l_f_tf_.transform.translation.z - l_f_tf.transform.translation.z;
+    } else if (l_f_tf.transform.translation.z > r_f_tf.transform.translation.z) {
+      dy = yqr_ - yqr; // Right Foot Down
+      tf_diff.translation.x =
+        r_f_tf_.transform.translation.x - r_f_tf.transform.translation.x;
+      tf_diff.translation.y =
+        r_f_tf_.transform.translation.y - r_f_tf.transform.translation.y;
+      tf_diff.translation.z =
+        r_f_tf_.transform.translation.z - r_f_tf.transform.translation.z;
     } else {
-      // Right Foot Down
-      tf_diff.translation.x = r_foot_tf_.transform.translation.x -
-                              r_foot_tf.transform.translation.x;
-      tf_diff.translation.y = r_foot_tf_.transform.translation.y -
-                              r_foot_tf.transform.translation.y;
-      tf_diff.translation.z = r_foot_tf_.transform.translation.z -
-                              r_foot_tf.transform.translation.z;
-      tf_diff.rotation.x = r_foot_tf_.transform.rotation.x -
-                           r_foot_tf.transform.rotation.x;
-      tf_diff.rotation.y = r_foot_tf_.transform.rotation.y -
-                           r_foot_tf.transform.rotation.y;
-      tf_diff.rotation.z = r_foot_tf_.transform.rotation.z -
-                           r_foot_tf.transform.rotation.z;
-      tf_diff.rotation.w = r_foot_tf_.transform.rotation.w -
-                           r_foot_tf.transform.rotation.w;
+      dy = ((yql_ - yql) + (yqr_ - yqr)) / 2; // Both Feet Down, take average
+      tf_diff.translation.x =
+        ((l_f_tf_.transform.translation.x - l_f_tf.transform.translation.x) +
+         (r_f_tf_.transform.translation.x - r_f_tf.transform.translation.x)) / 2;
+      tf_diff.translation.y =
+        ((l_f_tf_.transform.translation.y - l_f_tf.transform.translation.y) +
+         (r_f_tf_.transform.translation.y - r_f_tf.transform.translation.y)) / 2;
+      tf_diff.translation.z =
+        ((l_f_tf_.transform.translation.z - l_f_tf.transform.translation.z) +
+         (r_f_tf_.transform.translation.z - r_f_tf.transform.translation.z)) / 2;
     }
-    l_foot_tf_ = l_foot_tf;
-    r_foot_tf_ = r_foot_tf;
-    odom_tf_.transform.translation.x += tf_diff.translation.x;
-    odom_tf_.transform.translation.y += tf_diff.translation.y;
+    l_f_tf_ = l_f_tf; r_f_tf_ = r_f_tf;   // Update feet tfs for next step
+    y_ += dy;   // Update Yaw and Translation Odometry estimates
+    odom_tf_.transform.translation.x +=
+      (tf_diff.translation.x * cos(-y_)) + (tf_diff.translation.y * sin(-y_));
+    odom_tf_.transform.translation.y +=
+      (tf_diff.translation.y * cos(-y_)) + (tf_diff.translation.x * -sin(-y_));
     odom_tf_.transform.translation.z += tf_diff.translation.z;
-    tf2::Quaternion q1 (odom_tf_.transform.rotation.x + tf_diff.rotation.x,
-                        odom_tf_.transform.rotation.y + tf_diff.rotation.y,
-                        odom_tf_.transform.rotation.z + tf_diff.rotation.z,
-                        odom_tf_.transform.rotation.w + tf_diff.rotation.w);
-    q1.normalize();
-    odom_tf_.transform.rotation.x = q1.x();
-    odom_tf_.transform.rotation.y = q1.y();
-    odom_tf_.transform.rotation.z = q1.z();
-    odom_tf_.transform.rotation.w = q1.w();
-
-    // odom_tf_.transform.rotation.x = quat_ori_.x();
-    // odom_tf_.transform.rotation.y = quat_ori_.y();
-    // odom_tf_.transform.rotation.z = quat_ori_.z();
-    // odom_tf_.transform.rotation.w = quat_ori_.w();
-
-    // ROS_INFO_STREAM("TFx: " << tf_diff.translation.x <<
-    //                 " TFy: " << tf_diff.translation.y <<
-    //                 " TFz: " << tf_diff.translation.z);
+    if (odom_accel_) {  // Combine Accelerometer data
+      quat_ori_.setRPY(r_, p_, y_); quat_ori_.normalize();
+    } else {  // Use only estimated Yaw
+      quat_ori_.setRPY(0, 0, y_); quat_ori_.normalize();
+    }
+    odom_tf_.transform.rotation = tf2::toMsg(quat_ori_);
   }
 }
 
 void MartyCore::tfCB(const ros::TimerEvent& e) {
-  joints_.header.stamp = ros::Time::now();
-  joints_pub_.publish(joints_);           // Publish Joint States
   cam_tf_.header.stamp = ros::Time::now();
   tf_br_.sendTransform(cam_tf_);          // Camera transformation
-  odom_tf_.header.stamp = ros::Time::now();
+  // Publish Joint States
+  joints_.header.stamp = ros::Time::now(); joints_pub_.publish(joints_);
+  // Odometry transformation
   this->updateOdom();
-  odom_br_.sendTransform(odom_tf_);       // Odometry transformation
+  odom_tf_.header.stamp = ros::Time::now(); odom_br_.sendTransform(odom_tf_);
 }
 
 void MartyCore::readySound() {
