@@ -17,23 +17,25 @@ MartyCore::MartyCore(ros::NodeHandle& nh) : nh_(nh), tf_ls_(tf_buff_) {
 
 MartyCore::~MartyCore() {
   ros::param::del("/marty");
+  nh_.deleteParam("~");
 }
 
 void MartyCore::loadParams() {
-  ros::param::param("/marty/calibrated", calibrated_, false);
+  nh_.param("calibrated", calibrated_, false);
   if (!calibrated_) {
     ERR("Marty has not been calibrated before!\n");
     WARN("Please use 'roslaunch ros_marty calibration.launch' to calibrate\n");
     ros::param::del("/marty");
+    nh_.deleteParam("~");
     ros::shutdown();
     exit(0);
   }
   for (int id = 0; id < NUMJOINTS; ++id) {
-    std::string zero_p = "/marty/" + NAMES[id] + "/zero";
-    std::string max_p = "/marty/" + NAMES[id] + "/max";
-    std::string min_p = "/marty/" + NAMES[id] + "/min";
-    std::string dir_p = "/marty/" + NAMES[id] + "/dir";
-    std::string mult_p = "/marty/" + NAMES[id] + "/mult";
+    std::string zero_p = NAMES[id] + "/zero";
+    std::string max_p = NAMES[id] + "/max";
+    std::string min_p = NAMES[id] + "/min";
+    std::string dir_p = NAMES[id] + "/dir";
+    std::string mult_p = NAMES[id] + "/mult";
     ros::param::get(zero_p, joint_[id].cmdZero);
     ros::param::get(max_p, joint_[id].cmdMax);
     ros::param::get(min_p, joint_[id].cmdMin);
@@ -41,11 +43,11 @@ void MartyCore::loadParams() {
     ros::param::get(mult_p, joint_[id].cmdMult);
   }
 
-  ros::param::param("/marty/check_fall", fall_disable_, true);
-  ros::param::param("/marty/fall_threshold", fall_thr_, 0.9);
-  ros::param::param("/marty/odom_accel", odom_accel_, true);
-  ros::param::param("/marty/camera", camera_, false);
-  if (camera_) {ros::param::param("/marty/camera_ori", camera_ori_, 15.0);}
+  nh_.param("check_fall", fall_disable_, true);
+  nh_.param("fall_threshold", fall_thr_, 0.9);
+  nh_.param("odom_accel", odom_accel_, true);
+  nh_.param("camera", camera_, false);
+  if (camera_) {nh_.param("camera_ori", camera_ori_, 15.0);}
 
   marty_msgs::ServoMsg joint;
   for (int id = 0; id < NUMJOINTS; ++id) {
@@ -96,31 +98,31 @@ void MartyCore::init() {
 
 void MartyCore::rosSetup() {
   // PUBLISHERS
-  enable_pub_ = nh_.advertise<std_msgs::Bool>("/enable_motors", 10);
+  enable_pub_ = nh_.advertise<std_msgs::Bool>("enable_motors", 10);
   while (enable_pub_.getNumSubscribers() == 0) {
     ROS_INFO("Waiting for rosserial to start...\n");
     sleepms(500);
   }
-  falling_pub_ = nh_.advertise<std_msgs::Bool>("/falling", 1, true);
-  servo_pub_ = nh_.advertise<marty_msgs::ServoMsg>("/servo", 10);
-  servo_array_pub_ = nh_.advertise<marty_msgs::ServoMsgArray>("/servo_array", 10);
-  joints_pub_ = nh_.advertise<sensor_msgs::JointState>("/joint_states", 10);
+  falling_pub_ = nh_.advertise<std_msgs::Bool>("falling", 1, true);
+  servo_pub_ = nh_.advertise<marty_msgs::ServoMsg>("servo", 10);
+  servo_array_pub_ = nh_.advertise<marty_msgs::ServoMsgArray>("servo_array", 10);
+  joints_pub_ = nh_.advertise<sensor_msgs::JointState>("joint_states", 10);
   // SUBSCRIBERS
-  joint_sub_ = nh_.subscribe("/servo", 1000, &MartyCore::jointCB, this);
-  joints_sub_ = nh_.subscribe("/servo_array", 1000, &MartyCore::jointsCB, this);
-  accel_sub_ = nh_.subscribe("/accel", 1000, &MartyCore::accelCB, this);
-  batt_sub_ = nh_.subscribe("/battery", 1000, &MartyCore::battCB, this);
-  gpio_sub_ = nh_.subscribe("/gpios", 1000, &MartyCore::gpioCB, this);
+  joint_sub_ = nh_.subscribe("servo", 1000, &MartyCore::jointCB, this);
+  joints_sub_ = nh_.subscribe("servo_array", 1000, &MartyCore::jointsCB, this);
+  accel_sub_ = nh_.subscribe("accel", 1000, &MartyCore::accelCB, this);
+  batt_sub_ = nh_.subscribe("battery", 1000, &MartyCore::battCB, this);
+  gpio_sub_ = nh_.subscribe("gpios", 1000, &MartyCore::gpioCB, this);
   // SERVICES
-  fall_dis_srv_ = nh_.advertiseService("/marty/fall_disable",
+  fall_dis_srv_ = nh_.advertiseService("fall_disable",
                                        &MartyCore::setFallDetector, this);
   play_sound_ = nh_.serviceClient<marty_msgs::Sound>("/marty/play_sound");
-  // ros::service::waitForService("/marty/set_gpio_config");
+  // ros::service::waitForService("set_gpio_config");
   // set_gpio_config_ =
-  //   nh_.serviceClient<marty_msgs::GPIOConfig>("/marty/set_gpio_config");
-  // ros::service::waitForService("/marty/get_gpio_config");
+  //   nh_.serviceClient<marty_msgs::GPIOConfig>("set_gpio_config");
+  // ros::service::waitForService("get_gpio_config");
   // get_gpio_config_ =
-  //   nh_.serviceClient<marty_msgs::GPIOConfig>("/marty/get_gpio_config");
+  //   nh_.serviceClient<marty_msgs::GPIOConfig>("get_gpio_config");
   // marty_msgs::GPIOConfig srv;
   // srv.request.config[0] = marty_msgs::GPIOConfig::Request::DIGITAL_IN;
   // if (set_gpio_config_.call(srv)) {
@@ -189,12 +191,12 @@ void MartyCore::jointsCB(const marty_msgs::ServoMsgArray::ConstPtr& msg) {
 }
 
 /**
- * @brief Updates the joint state positions of every joint given servo cmds
- * @details This function is called on every callback that updates a joint
- * position, and publishes the appropriate updates to the joint_states topic.
- *
- * @param servo The servo cmd message (Id and Position)
- */
+* @brief Updates the joint state positions of every joint given servo cmds
+* @details This function is called on every callback that updates a joint
+* position, and publishes the appropriate updates to the joint_states topic.
+*
+* @param servo The servo cmd message (Id and Position)
+*/
 void MartyCore::updateJointState(marty_msgs::ServoMsg servo) {
   if (servo.servo_id == 0) {
     joints_.position[10] =
@@ -288,11 +290,11 @@ void MartyCore::gpioCB(const marty_msgs::GPIOs::ConstPtr& msg) {
 }
 
 /**
- * @brief This function updates the Odometry given Marty's motion and sensors
- * @details Marty uses joint state data to estimate its pose as it moves. The
- * change in position of the feet (Assuming the base_link of the robot moves
- * inversely to the foot on the ground)
- */
+* @brief This function updates the Odometry given Marty's motion and sensors
+* @details Marty uses joint state data to estimate its pose as it moves. The
+* change in position of the feet (Assuming the base_link of the robot moves
+* inversely to the foot on the ground)
+*/
 void MartyCore::updateOdom() {
   if (!odom_setup_) {
     this->setupOdometry();

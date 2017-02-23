@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 
 <launch>
-  <node name="serial_node" pkg="rosserial_python" type="serial_node.py" output="screen" clear_params="true" />
-  <include file="$(find ros_marty)/launch/marty.launch"/>
+  <arg name="name" default="marty" /> <!-- Change Marty's name-->
+  <param name="name" value="$(arg name)"/>
+  <group ns="$(arg name)">
+    <node name="serial_node" pkg="rosserial_python" type="serial_node.py" output="screen" clear_params="true" />
+    <include file="$(find ros_marty)/launch/marty.launch"/>
+  </group>
 </launch>

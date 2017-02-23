@@ -483,12 +483,12 @@ void CmdServer::init() {
 }
 
 void CmdServer::rosSetup() {
-  gpio_sub_ = nh_.subscribe("/gpios", 1000, &CmdServer::gpioCB, this);
-  accel_sub_ = nh_.subscribe("/accel", 1000, &CmdServer::accelCB, this);
-  batt_sub_ = nh_.subscribe("/battery", 1000, &CmdServer::battCB, this);
-  curr_sub_ = nh_.subscribe("/motor_currents", 1000, &CmdServer::currCB, this);
-  ball_sub_ = nh_.subscribe("/ball_pos", 1000, &CmdServer::ballCB, this);
-  cmd_srv_ = nh_.advertiseService("/command", &CmdServer::cmd_service, this);
+  gpio_sub_ = nh_.subscribe("gpios", 1000, &CmdServer::gpioCB, this);
+  accel_sub_ = nh_.subscribe("accel", 1000, &CmdServer::accelCB, this);
+  batt_sub_ = nh_.subscribe("battery", 1000, &CmdServer::battCB, this);
+  curr_sub_ = nh_.subscribe("motor_currents", 1000, &CmdServer::currCB, this);
+  ball_sub_ = nh_.subscribe("ball_pos", 1000, &CmdServer::ballCB, this);
+  cmd_srv_ = nh_.advertiseService("command", &CmdServer::cmd_service, this);
 }
 
 bool CmdServer::cmd_service(marty_msgs::Command::Request& req,
@@ -526,14 +526,14 @@ void CmdServer::stopServer() {
 
 void CmdServer::waitForCmd() {
   struct sockaddr_in clientaddr;
-  char buffer[256];
+  char buffer[4096];
   char const* resp_msg = "";
   socklen_t clilen = sizeof(clientaddr);
   int clisock = accept(sock_, (struct sockaddr*) &clientaddr, &clilen);
   if (clisock >= 0) {
     robot_->enableRobot();
     ROS_DEBUG("Incoming connection accepted...\n");
-    int nbytes = read(clisock, buffer, 256);
+    int nbytes = read(clisock, buffer, 4096);
     if (nbytes > 0) {
       ROS_DEBUG("Data received: %d", buffer[0]);
       vector<int8_t> dbytes;
@@ -586,7 +586,7 @@ void CmdServer::waitForCmd() {
 int main(int argc, char** argv) {
   signal(SIGINT, exit_f);
   ros::init(argc, argv, "cmd_server");
-  ros::NodeHandle nh("~");
+  ros::NodeHandle nh;
 
   CmdServer cmd_server(nh);
   cmd_server.robotReady();
