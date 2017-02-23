@@ -33,6 +33,7 @@
 #include <marty_msgs/ServoMsgArray.h>
 #include <marty_msgs/GPIOConfig.h>
 #include <marty_msgs/Sound.h>
+#include <marty_msgs/SoundArray.h>
 #include <geometry_msgs/TransformStamped.h>
 
 // MARTY
@@ -69,7 +70,10 @@ class MartyCore {
   void stopRobot();
   bool setServo(int id, float angle);
   void setServos(std::map<int, float> angles);
-  void playSound(float frequency, float duration);
+
+  void playSound(float frequency, float duration, float freq2 = -1);
+  void playSoundArray(marty_msgs::SoundArray sound_array);
+  void stopSound();
 
   // Getters/Setters
   bool hasFallen() {return falling_.data;}
@@ -130,13 +134,13 @@ class MartyCore {
   ros::Publisher  servo_pub_;
   ros::Publisher  servo_array_pub_;
   ros::Publisher  joints_pub_;
+  ros::Publisher  sound_pub_;
   ros::Subscriber joint_sub_;
   ros::Subscriber joints_sub_;
   ros::Subscriber accel_sub_;
   ros::Subscriber batt_sub_;
   ros::Subscriber gpio_sub_;
   ros::ServiceServer fall_dis_srv_;
-  ros::ServiceClient play_sound_;
   ros::ServiceClient set_gpio_config_;
   ros::ServiceClient get_gpio_config_;
 

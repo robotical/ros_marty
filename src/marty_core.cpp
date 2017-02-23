@@ -107,6 +107,7 @@ void MartyCore::rosSetup() {
   servo_pub_ = nh_.advertise<marty_msgs::ServoMsg>("servo", 10);
   servo_array_pub_ = nh_.advertise<marty_msgs::ServoMsgArray>("servo_array", 10);
   joints_pub_ = nh_.advertise<sensor_msgs::JointState>("joint_states", 10);
+  sound_pub_ =  nh_.advertise<marty_msgs::SoundArray>("sound", 10);
   // SUBSCRIBERS
   joint_sub_ = nh_.subscribe("servo", 1000, &MartyCore::jointCB, this);
   joints_sub_ = nh_.subscribe("servo_array", 1000, &MartyCore::jointsCB, this);
@@ -116,7 +117,6 @@ void MartyCore::rosSetup() {
   // SERVICES
   fall_dis_srv_ = nh_.advertiseService("fall_disable",
                                        &MartyCore::setFallDetector, this);
-  play_sound_ = nh_.serviceClient<marty_msgs::Sound>("/marty/play_sound");
   // ros::service::waitForService("set_gpio_config");
   // set_gpio_config_ =
   //   nh_.serviceClient<marty_msgs::GPIOConfig>("set_gpio_config");
@@ -386,15 +386,76 @@ void MartyCore::tfCB(const ros::TimerEvent& e) {
 }
 
 void MartyCore::readySound() {
-  this->playSound(440.0, 0.25);
-  this->playSound(880.0, 0.25);
+  marty_msgs::SoundArray sound_array;
+  marty_msgs::Sound sound;
+  sound.freq1 = 1760; sound.freq2 = 1760; sound.duration = 0.10;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 1760; sound.freq2 = 880; sound.duration = 0.30;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 880; sound.freq2 = 880; sound.duration = 0.10;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 880; sound.freq2 = 1319; sound.duration = 0.30;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 1319; sound.freq2 = 1319; sound.duration = 0.10;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 1319; sound.freq2 = 659; sound.duration = 0.30;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 659; sound.freq2 = 659; sound.duration = 0.10;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 659; sound.freq2 = 880; sound.duration = 0.30;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 880; sound.freq2 = 880; sound.duration = 0.10;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 880; sound.freq2 = 440; sound.duration = 0.30;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 440; sound.freq2 = 440; sound.duration = 0.10;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 0; sound.freq2 = 0; sound.duration = 0.20;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 440; sound.freq2 = 440; sound.duration = 0.10;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 0; sound.freq2 = 0; sound.duration = 0.05;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 440; sound.freq2 = 440; sound.duration = 0.10;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 0; sound.freq2 = 0; sound.duration = 0.05;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = 440; sound.freq2 = 440; sound.duration = 0.40;
+  sound_array.sound.push_back(sound);
+  this->playSoundArray(sound_array);
 }
 
-void MartyCore::playSound(float frequency, float duration) {
-  marty_msgs::Sound sound_srv;
-  sound_srv.request.frequency = frequency;
-  sound_srv.request.duration = duration;
-  play_sound_.call(sound_srv);
+void MartyCore::playSound(float frequency, float duration, float freq2) {
+  if (freq2 == -1) {freq2 = frequency;} // Disable chirp
+  marty_msgs::Sound sound;
+  sound.freq1 = frequency; sound.freq2 = freq2; sound.duration = duration;
+  marty_msgs::SoundArray sound_array;
+  sound_array.sound.push_back(sound);
+  sound_pub_.publish(sound_array);
+}
+
+void MartyCore::playSoundArray(marty_msgs::SoundArray sound_array) {
+  for (int s = 0; s < (sound_array.sound.size() / 8); ++s) {
+    marty_msgs::SoundArray sounds;
+    for (int i = (0 + (s * 8)); i < (8 + (s * 8)); ++i) {
+      sounds.sound.push_back(sound_array.sound[i]);
+    }
+    sound_pub_.publish(sounds);
+  }
+  marty_msgs::SoundArray sounds;
+  for (int i = 0; i < (sound_array.sound.size() % 8); ++i) {
+    sounds.sound.push_back(
+      sound_array.sound[i + (sound_array.sound.size() / 8) * 8]);
+  }
+  sound_pub_.publish(sounds);
+}
+
+void MartyCore::stopSound() {
+  marty_msgs::Sound sound;
+  sound.freq1 = 0; sound.freq2 = sound.freq1; sound.duration = 0;
+  marty_msgs::SoundArray sound_array;
+  sound_array.sound.push_back(sound);
+  sound_pub_.publish(sound_array);
 }
 
 int MartyCore::jointPosToServoCmd(int id, float pos) {

@@ -114,6 +114,7 @@ class CmdServer {
                 int step_length = 50);
   void standStraight(int movetime = 1000);
   void playSound(int freq = 440, int duration = 500);
+  void playSounds(std::vector<int> sounds);
   void stopRobot();
   void walk(int num_steps = 2, int turn = 0,
             int move_time = 3000, int step_length = 50, int side = -1);

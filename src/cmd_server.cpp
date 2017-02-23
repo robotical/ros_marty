@@ -16,6 +16,7 @@ using namespace Trajectory;
 void CmdServer::robotReady() {
   if (ready_move_) {
     robot_->enableRobot();
+    robot_->readySound();
     this->lean(CMD_LEFT, 30, 500);
     this->lean(CMD_RIGHT, 30, 1000);
     this->standStraight(500);
@@ -25,7 +26,6 @@ void CmdServer::robotReady() {
     sleepms(stop_wait * 2);
     robot_->setServo(EYES, EYES_NORMAL);
     sleepms(stop_wait);
-    robot_->readySound();
   }
   robot_->stopRobot();
 }
@@ -83,8 +83,8 @@ void CmdServer::runCommand(vector<int> data) {
     if (l == 5) {sideStep(data[1], data[2], data[3], data[4]);} break;
   case CMD_STRAIGHT:
     if (l == 1) {standStraight();} if (l == 2) {standStraight(data[1]);}
-  case CMD_SOUND: if (l == 2) {playSound(data[1]);}
-    if (l == 3) {playSound(data[1], data[2]);} break;
+  case CMD_SOUND:
+    playSounds(data); break;
   case CMD_STOP: stopRobot(); break;
   default:
     ROS_ERROR_STREAM("CmdServer did not recognise command " << data[0]); break;
@@ -435,8 +435,26 @@ void CmdServer::standStraight(int movetime) {
   runTrajectory(robot_, tInterp);
 }
 
-void CmdServer::playSound(int frequency, int duration) {
-  robot_->playSound(frequency, (float)duration / 1000);
+// void CmdServer::playSound(int frequency, int duration, int freq2) {
+//   robot_->playSound(frequency, (float)duration / 1000, freq2);
+// }
+
+void CmdServer::playSounds(std::vector<int> sounds) {
+  marty_msgs::SoundArray sound_msg;
+  if (((sounds.size() - 1) % 3) != 0) {
+    ROS_WARN("Received wrong number of sound arguments!");
+  }
+  for (int s = 0; s < ((sounds.size() - 1) / 3); ++s) {
+    marty_msgs::Sound sound;
+    int i = 1 + (s * 3);
+    sound.freq1 = sounds[i];
+    sound.duration = ((float)sounds[i + 1] / 1000);
+    sound.freq2 = sounds[i + 2];
+    ROS_INFO_STREAM("F1: " << sound.freq1 << " D: " << sound.duration <<
+                    " F2: " << sound.freq2);
+    sound_msg.sound.push_back(sound);
+  }
+  robot_->playSoundArray(sound_msg);
 }
 
 void CmdServer::stopRobot() {
