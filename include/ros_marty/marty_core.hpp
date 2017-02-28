@@ -106,6 +106,7 @@ class MartyCore {
   bool fall_disable_;   // If true disables motor commands when fallen
   double fall_thr_;     // Threshold for determining if Marty is falling
   bool odom_accel_;     // Combine accelerometer data with odometry
+  bool simulated_;      // Whether Marty is living in a dream world
   // double batt_thr_;
   bool camera_;         // If true camera tf and functions are enabled
   double camera_ori_;   // Camera orientation relative to base_link

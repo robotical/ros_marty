@@ -48,6 +48,8 @@ void MartyCore::loadParams() {
   nh_.param("odom_accel", odom_accel_, true);
   nh_.param("camera", camera_, false);
   if (camera_) {nh_.param("camera_ori", camera_ori_, 15.0);}
+  nh_.param("simulated", simulated_, false);
+  ROS_WARN("Marty is being simulated");
 
   marty_msgs::ServoMsg joint;
   for (int id = 0; id < NUMJOINTS; ++id) {
@@ -99,9 +101,11 @@ void MartyCore::init() {
 void MartyCore::rosSetup() {
   // PUBLISHERS
   enable_pub_ = nh_.advertise<std_msgs::Bool>("enable_motors", 10);
-  while (enable_pub_.getNumSubscribers() == 0) {
-    ROS_INFO("Waiting for rosserial to start...\n");
-    sleepms(500);
+  if (!simulated_) {
+    while (enable_pub_.getNumSubscribers() == 0) {
+      ROS_INFO("Waiting for rosserial to start...\n");
+      sleepms(500);
+    }
   }
   falling_pub_ = nh_.advertise<std_msgs::Bool>("falling", 1, true);
   servo_pub_ = nh_.advertise<marty_msgs::ServoMsg>("servo", 10);
