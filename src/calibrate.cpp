@@ -13,7 +13,7 @@
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "calibration");
-  ros::NodeHandle nh("~");
+  ros::NodeHandle nh("");
   ros::Rate r(50);
 
   bool launched(false);

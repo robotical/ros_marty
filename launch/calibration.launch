@@ -3,8 +3,8 @@
 <launch>
   <group ns="marty">
     <rosparam file="$(find ros_marty)/cfg/joint_calib.cfg" command="load" />
+    <param name="launched" value="true"/>
     <node name="calibrate" pkg="ros_marty" type="calibrate" output="screen" clear_params="true">
-      <param name="launched" value="true"/>
     </node>
   </group>
 </launch>
