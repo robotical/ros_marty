@@ -83,6 +83,10 @@ bool Trajectory::runTrajectory(MartyCore* robot, data_t& traj) {
 data_t Trajectory::genStepLeft(MartyCore* robot, int stepLength, int turn,
                                float period,
                                char flags) {
+  int arm_move1 = stepLength / 5;
+  int arm_move2 = stepLength / 1.6;
+  int arm_move3 = stepLength * 1.6;
+  int arm_move4 = stepLength / 1.25;
   data_t tSetpoints, tInterp;
   deque<float> tline(robot->jangles_);
   tline.push_front(0.0);
@@ -90,23 +94,23 @@ data_t Trajectory::genStepLeft(MartyCore* robot, int stepLength, int turn,
 
   tline[0] = 0.25 * period;
   tline[1 + RKNEE] = WKSMALL; tline[1 + LKNEE] = WKSMALL;
-  tline[1 + RARM] = 10; tline[1 + LARM] = -10;
+  tline[1 + RARM] = arm_move1; tline[1 + LARM] = -arm_move1;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.375 * period;
   tline[1 + LKNEE] = WKLARGE;
-  tline[1 + RARM] = 30; tline[1 + LARM] = -30;
+  tline[1 + RARM] = arm_move2; tline[1 + LARM] = -arm_move2;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.625 * period;
   tline[1 + RHIP] = stepLength / 2; tline[1 + LHIP] = 0 - stepLength / 2;
   tline[1 + LTWIST] = 0; tline[1 + RTWIST] = turn;
-  tline[1 + RARM] = 80; tline[1 + LARM] = -80;
+  tline[1 + RARM] = arm_move3; tline[1 + LARM] = -arm_move3;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.75 * period;
   tline[1 + LKNEE] = WKSMALL;
-  tline[1 + RARM] = 40; tline[1 + LARM] = -40;
+  tline[1 + RARM] = arm_move4; tline[1 + LARM] = -arm_move4;
   tSetpoints.push_back(tline);
 
   tline[0] = period;
@@ -122,6 +126,10 @@ data_t Trajectory::genStepLeft(MartyCore* robot, int stepLength, int turn,
 data_t Trajectory::genStepRight(MartyCore* robot, int stepLength, int turn,
                                 float period,
                                 char flags) {
+  int arm_move1 = stepLength / 5;
+  int arm_move2 = stepLength / 1.6;
+  int arm_move3 = stepLength * 1.6;
+  int arm_move4 = stepLength / 1.25;
   data_t tSetpoints, tInterp;
   deque<float> tline(robot->jangles_);
   tline.push_front(0.0);
@@ -129,23 +137,23 @@ data_t Trajectory::genStepRight(MartyCore* robot, int stepLength, int turn,
 
   tline[0] = 0.25 * period;
   tline[1 + RKNEE] = 0 - WKSMALL; tline[1 + LKNEE] = 0 - WKSMALL;
-  tline[1 + RARM] = -10; tline[1 + LARM] = 10;
+  tline[1 + RARM] = -arm_move1; tline[1 + LARM] = arm_move1;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.375 * period;
   tline[1 + RKNEE] = 0 - WKLARGE;
-  tline[1 + RARM] = -30; tline[1 + LARM] = 30;
+  tline[1 + RARM] = -arm_move2; tline[1 + LARM] = arm_move2;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.625 * period;
   tline[1 + RHIP] = 0 - stepLength / 2; tline[1 + LHIP] = stepLength / 2;
   tline[1 + LTWIST] = turn; tline[1 + RTWIST] = 0;
-  tline[1 + RARM] = -80; tline[1 + LARM] = 80;
+  tline[1 + RARM] = -arm_move3; tline[1 + LARM] = arm_move3;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.75 * period;
   tline[1 + RKNEE] = 0 - WKSMALL;
-  tline[1 + RARM] = -40; tline[1 + LARM] = 40;
+  tline[1 + RARM] = -arm_move4; tline[1 + LARM] = arm_move4;
   tSetpoints.push_back(tline);
 
   tline[0] = period;
@@ -301,19 +309,24 @@ data_t Trajectory::genKickLeft(MartyCore* robot, float period) {
 
   tline[0] = 0.2 * period;
   tline[1 + RKNEE] = WKSMALL; tline[1 + LKNEE] = WKSMALL;
+  tline[1 + RARM] = 20;  tline[1 + LARM] = 20;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.375 * period;
   tline[1 + LKNEE] = WKLARGE;
+  tline[1 + LHIP] = 10;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.425 * period;
   tline[1 + LHIP] = -150;
+  tline[1 + EYES] = 30;
+  tline[1 + RARM] = -20;  tline[1 + LARM] = -20;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.575 * period;
-  tline[1 + LHIP] = 0;
-  tline[1 + RHIP] = 0;
+  tline[1 + LHIP] = 0; tline[1 + RHIP] = 0;
+  tline[1 + EYES] = 0;
+  tline[1 + RARM] = 0;  tline[1 + LARM] = 0;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.7 * period;
@@ -337,19 +350,24 @@ data_t Trajectory::genKickRight(MartyCore* robot, float period) {
 
   tline[0] = 0.2 * period;
   tline[1 + RKNEE] = -WKSMALL; tline[1 + LKNEE] = -WKSMALL;
+  tline[1 + RARM] = 20;  tline[1 + LARM] = 20;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.375 * period;
   tline[1 + RKNEE] = -WKLARGE;
+  tline[1 + RHIP] = 10;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.425 * period;
   tline[1 + RHIP] = -150;
+  tline[1 + EYES] = 30;
+  tline[1 + RARM] = -20;  tline[1 + LARM] = -20;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.575 * period;
-  tline[1 + LHIP] = 0;
-  tline[1 + RHIP] = 0;
+  tline[1 + LHIP] = 0; tline[1 + RHIP] = 0;
+  tline[1 + EYES] = 0;
+  tline[1 + RARM] = 0;  tline[1 + LARM] = 0;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.7 * period;
