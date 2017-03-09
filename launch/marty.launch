@@ -14,5 +14,7 @@
     <param name="robot_description" textfile="$(find marty_description)/urdf/marty.urdf" />
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
     <!-- <include file="$(find ball_following)/launch/football.launch"/> -->
-    <node name="joy_node" pkg="joy" type="joy_node" />
+    <node name="joy_node" pkg="joy" type="joy_node">
+        <param name="autorepeat_rate" value="0.5"/>
+    </node>
 </launch>
