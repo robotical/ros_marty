@@ -15,6 +15,7 @@
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
     <!-- <include file="$(find ball_following)/launch/football.launch"/> -->
     <node name="joy_node" pkg="joy" type="joy_node">
-        <param name="autorepeat_rate" value="0.5"/>
+        <param name="autorepeat_rate" value="10"/>
     </node>
+    <node name="marty_joy" pkg="marty_joy" type="marty_joy"/>
 </launch>
