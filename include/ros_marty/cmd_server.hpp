@@ -131,6 +131,7 @@ class CmdServer {
   bool busy_;
   bool ros_cmd_;
   bool resp_request_;
+  bool turn_spot_;
 
   // Params
   bool ready_move_;

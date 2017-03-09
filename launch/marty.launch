@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 
 <launch>
-    <arg name="camera" value="true" /> <!-- If camera is installed -->
+    <arg name="camera" value="false" /> <!-- If camera is installed -->
     <param name="use_sim_time" value="false"/> <!-- Enable if Simulated -->
     <rosparam file="$(find ros_marty)/cfg/joint_calib.cfg" command="load" />
     <rosparam file="$(find ros_marty)/cfg/config.cfg" command="load" />
@@ -13,4 +13,6 @@
     </group>
     <param name="robot_description" textfile="$(find marty_description)/urdf/marty.urdf" />
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+    <!-- <include file="$(find ball_following)/launch/football.launch"/> -->
+    <node name="joy_node" pkg="joy" type="joy_node" />
 </launch>

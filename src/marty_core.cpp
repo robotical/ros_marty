@@ -49,7 +49,7 @@ void MartyCore::loadParams() {
   nh_.param("camera", camera_, false);
   if (camera_) {nh_.param("camera_ori", camera_ori_, 15.0);}
   nh_.param("simulated", simulated_, false);
-  ROS_WARN("Marty is being simulated");
+  if (simulated_) { ROS_WARN("Marty is being simulated"); }
 
   marty_msgs::ServoMsg joint;
   for (int id = 0; id < NUMJOINTS; ++id) {
@@ -392,39 +392,70 @@ void MartyCore::tfCB(const ros::TimerEvent& e) {
 void MartyCore::readySound() {
   marty_msgs::SoundArray sound_array;
   marty_msgs::Sound sound;
-  sound.freq1 = 1760; sound.freq2 = 1760; sound.duration = 0.10;
+  sound.freq1 = NOTE_A6; sound.freq2 = NOTE_A6; sound.duration = 0.10;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 1760; sound.freq2 = 880; sound.duration = 0.30;
+  sound.freq1 = NOTE_A6; sound.freq2 = NOTE_A5; sound.duration = 0.30;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 880; sound.freq2 = 880; sound.duration = 0.10;
+  sound.freq1 = NOTE_A5; sound.freq2 = NOTE_A5; sound.duration = 0.10;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 880; sound.freq2 = 1319; sound.duration = 0.30;
+  sound.freq1 = NOTE_A5; sound.freq2 = NOTE_E6; sound.duration = 0.30;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 1319; sound.freq2 = 1319; sound.duration = 0.10;
+  sound.freq1 = NOTE_E6; sound.freq2 = NOTE_E6; sound.duration = 0.10;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 1319; sound.freq2 = 659; sound.duration = 0.30;
+  sound.freq1 = NOTE_E6; sound.freq2 = NOTE_E5; sound.duration = 0.30;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 659; sound.freq2 = 659; sound.duration = 0.10;
+  sound.freq1 = NOTE_E5; sound.freq2 = NOTE_E5; sound.duration = 0.10;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 659; sound.freq2 = 880; sound.duration = 0.30;
+  sound.freq1 = NOTE_E5; sound.freq2 = NOTE_A5; sound.duration = 0.30;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 880; sound.freq2 = 880; sound.duration = 0.10;
+  sound.freq1 = NOTE_A5; sound.freq2 = NOTE_A5; sound.duration = 0.10;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 880; sound.freq2 = 440; sound.duration = 0.30;
+  sound.freq1 = NOTE_A5; sound.freq2 = NOTE_A4; sound.duration = 0.30;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 440; sound.freq2 = 440; sound.duration = 0.10;
+  sound.freq1 = NOTE_A4; sound.freq2 = NOTE_A4; sound.duration = 0.10;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 0; sound.freq2 = 0; sound.duration = 0.20;
+  sound.freq1 = SILENCE; sound.freq2 = SILENCE; sound.duration = 0.20;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 440; sound.freq2 = 440; sound.duration = 0.10;
+  sound.freq1 = NOTE_A4; sound.freq2 = NOTE_A4; sound.duration = 0.10;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 0; sound.freq2 = 0; sound.duration = 0.05;
+  sound.freq1 = SILENCE; sound.freq2 = SILENCE; sound.duration = 0.05;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 440; sound.freq2 = 440; sound.duration = 0.10;
+  sound.freq1 = NOTE_A4; sound.freq2 = NOTE_A4; sound.duration = 0.10;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 0; sound.freq2 = 0; sound.duration = 0.05;
+  sound.freq1 = SILENCE; sound.freq2 = SILENCE; sound.duration = 0.05;
   sound_array.sound.push_back(sound);
-  sound.freq1 = 440; sound.freq2 = 440; sound.duration = 0.40;
+  sound.freq1 = NOTE_A4; sound.freq2 = NOTE_A4; sound.duration = 0.40;
+  sound_array.sound.push_back(sound);
+  this->playSoundArray(sound_array);
+}
+
+void MartyCore::celebSound(float sound_time) {
+  float short_s = sound_time / 28;
+  float long_s = short_s * 4;
+  float vlong_s = short_s * 12;
+  marty_msgs::SoundArray sound_array;
+  marty_msgs::Sound sound;
+  sound.freq1 = NOTE_G5; sound.freq2 = NOTE_G5; sound.duration = long_s;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = SILENCE; sound.freq2 = SILENCE; sound.duration = short_s;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = NOTE_G5; sound.freq2 = NOTE_G5; sound.duration = short_s;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = SILENCE; sound.freq2 = SILENCE; sound.duration = short_s;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = NOTE_G5; sound.freq2 = NOTE_G5; sound.duration = short_s;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = SILENCE; sound.freq2 = SILENCE; sound.duration = short_s;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = NOTE_C6; sound.freq2 = NOTE_C6; sound.duration = long_s;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = SILENCE; sound.freq2 = SILENCE; sound.duration = short_s;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = NOTE_G5; sound.freq2 = NOTE_G5; sound.duration = short_s;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = SILENCE; sound.freq2 = SILENCE; sound.duration = short_s;
+  sound_array.sound.push_back(sound);
+  sound.freq1 = NOTE_C6; sound.freq2 = NOTE_C6; sound.duration = vlong_s;
   sound_array.sound.push_back(sound);
   this->playSoundArray(sound_array);
 }

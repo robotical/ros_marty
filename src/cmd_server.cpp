@@ -132,6 +132,10 @@ void CmdServer::walk(int num_steps, int turn, int move_time, int step_length,
     // Invert if walking backwards
     if (step_length < 0) { leftFoot = !leftFoot; }
   }
+  if ((turn_spot_) && ((abs(turn) > 0) && (step_length == 0)))
+  { leftFoot = !leftFoot; turn_spot_ = false; }
+  else if ((abs(turn) > 0) && (step_length == 0)) { turn_spot_ = true; }
+  else { turn_spot_ = false; }
   // Start walking!
   for (int step_num = 0; step_num < num_steps; step_num++) {
     if (leftFoot) {
@@ -242,6 +246,7 @@ void CmdServer::celebrate(int move_time) {
   data_t tInterp;
   tInterp = genCelebration(robot_, ((float)move_time) / 1000);
   runTrajectory(robot_, tInterp);
+  robot_->celebSound(1.6);
 }
 
 // Generate a trajectory to move the knee
@@ -410,6 +415,7 @@ void CmdServer::demo() {
   genTraj = genCelebration(robot_, 4.0);
   runTrajectory(robot_, genTraj);
   genTraj.clear();
+  robot_->celebSound(1.4);
 }
 
 void CmdServer::sideStep(int side, int num_steps, int movetime,
@@ -450,8 +456,6 @@ void CmdServer::playSounds(std::vector<int> sounds) {
       sound.freq1 = sounds[i];
       sound.duration = ((float)sounds[i + 1] / 1000);
       sound.freq2 = sounds[i + 2];
-      ROS_INFO_STREAM("F1: " << sound.freq1 << " D: " << sound.duration <<
-                      " F2: " << sound.freq2);
       sound_msg.sound.push_back(sound);
     }
     robot_->playSoundArray(sound_msg);
@@ -499,6 +503,7 @@ void CmdServer::init() {
   ros_cmd_ = false;
   resp_request_ = false;
   interp_dt_ = 0.02;
+  turn_spot_ = false;
 }
 
 void CmdServer::rosSetup() {

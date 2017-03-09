@@ -62,6 +62,7 @@ class MartyCore {
   MartyCore(ros::NodeHandle& nh);
   ~MartyCore();
   void readySound();
+  void celebSound(float sound_time);
   int jointPosToServoCmd(int id, float pos);
   void setServoJointPos(std::string name, int pos);
   void setServoPos(int channel, int pos);
