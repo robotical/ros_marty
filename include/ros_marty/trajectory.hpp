@@ -24,12 +24,11 @@ float gettime();
 bool interpTrajectory(data_t tIn, data_t& tOut, float dt);
 void printTrajectory(data_t& traj);
 bool runTrajectory(MartyCore* robot, data_t& traj);
-data_t genStepLeft(MartyCore* robot, int stepLength, int turn, float period,
-                   char flags);
-data_t genStepRight(MartyCore* robot, int stepLength, int turn, float period,
-                    char flags);
+data_t genStepLeft(MartyCore* robot, int stepLength, int turn, float period);
+data_t genStepRight(MartyCore* robot, int stepLength, int turn, float period);
 data_t genKickLeft(MartyCore* robot, float period);
 data_t genKickRight(MartyCore* robot, float period);
+data_t genSitBack(MartyCore* robot, float period);
 data_t genGetUp(MartyCore* robot);
 data_t genRaisedFootTwistLeft(MartyCore* robot, float period);
 data_t genRaisedFootTwistRight(MartyCore* robot, float period);

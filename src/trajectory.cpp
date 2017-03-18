@@ -81,8 +81,7 @@ bool Trajectory::runTrajectory(MartyCore* robot, data_t& traj) {
 }
 
 data_t Trajectory::genStepLeft(MartyCore* robot, int stepLength, int turn,
-                               float period,
-                               char flags) {
+                               float period) {
   int arm_move1 = stepLength / 5;
   int arm_move2 = stepLength / 1.6;
   int arm_move3 = stepLength * 1.6;
@@ -123,9 +122,24 @@ data_t Trajectory::genStepLeft(MartyCore* robot, int stepLength, int turn,
   return tInterp;
 }
 
+data_t Trajectory::genSitBack(MartyCore* robot, float period) {
+  data_t tSetpoints, tInterp;
+  deque<float> tline(robot->jangles_);
+  tline.push_front(0.0);
+  tSetpoints.push_back(tline);
+
+  tline[0] = period;
+  tline[1 + RHIP] = -100; tline[1 + LHIP] = -100;
+  tline[1 + RARM] = 100; tline[1 + LARM] = 100;
+  tSetpoints.push_back(tline);
+
+  interpTrajectory(tSetpoints, tInterp, INTERP_DT);
+
+  return tInterp;
+}
+
 data_t Trajectory::genStepRight(MartyCore* robot, int stepLength, int turn,
-                                float period,
-                                char flags) {
+                                float period) {
   int arm_move1 = stepLength / 5;
   int arm_move2 = stepLength / 1.6;
   int arm_move3 = stepLength * 1.6;

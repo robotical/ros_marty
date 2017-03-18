@@ -119,6 +119,10 @@ class CmdServer {
   void walk(int num_steps = 2, int turn = 0,
             int move_time = 3000, int step_length = 50, int side = -1);
 
+  void testLeg(int side, int duration);
+  void sitBack(int duration);
+  void swingArms(int r_arm, int l_arm, int duration = 0, int cycles = 2);
+
   void gpioCB(const marty_msgs::GPIOs& msg) {gpio_data_ = msg;}
   void accelCB(const marty_msgs::Accelerometer& msg) {accel_data_ = msg;}
   void battCB(const std_msgs::Float32& msg) {batt_data_ = msg;}
@@ -127,6 +131,7 @@ class CmdServer {
   void lifeCB(const ros::TimerEvent& e);
   bool cmd_service(marty_msgs::Command::Request&  req,
                    marty_msgs::Command::Response& res);
+  void setLife(bool enable);
 
   // Flags
   bool busy_;
@@ -136,6 +141,7 @@ class CmdServer {
 
   // Params
   bool ready_move_;
+  bool life_enabled_;
   int life_time_;
 
   // Variables
@@ -150,6 +156,7 @@ class CmdServer {
   std_msgs::Float32 batt_data_;
   marty_msgs::MotorCurrents curr_data_;
   geometry_msgs::Pose2D ball_pos_;
+  int life_beh_;
 
   // ROS
   ros::Subscriber gpio_sub_;

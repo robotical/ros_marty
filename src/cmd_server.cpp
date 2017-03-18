@@ -17,11 +17,9 @@ void CmdServer::robotReady() {
   if (ready_move_) {
     robot_->enableRobot();
     robot_->readySound();
-    int arm_pos = 20;
+    int arm_pos = 10;
     int lean_pos = 30;
-    this->arms(arm_pos, -arm_pos);
     this->lean(CMD_LEFT, lean_pos, 500);
-    this->arms(-arm_pos, arm_pos);
     this->lean(CMD_RIGHT, lean_pos, 1000);
     this->arms(0, 0);
     this->standStraight(500);
@@ -29,11 +27,11 @@ void CmdServer::robotReady() {
     float batt = robot_->getBattery();
 
     sleepms(stop_wait);
-    robot_->setServo(EYES, EYES_ANGRY);
     this->arms(arm_pos, arm_pos);
+    robot_->setServo(EYES, EYES_ANGRY);
     sleepms(stop_wait * 2);
-    robot_->setServo(EYES, EYES_WIDE * (1.0 - batt));
     this->arms(0, 0);
+    robot_->setServo(EYES, EYES_WIDE * (1.0 - batt));
     sleepms(stop_wait);
     robot_->stopRobot();
   }
@@ -42,7 +40,54 @@ void CmdServer::robotReady() {
 
 void CmdServer::lifeCB(const ros::TimerEvent& e) {
   life_timer_.stop();
-  this->robotReady();
+  if (life_enabled_) {
+    robot_->enableRobot();
+    if ( life_beh_ == 0 ) { // JUST EYEBROWS
+      life_beh_ = rand() % 5 + 1;
+    } else {
+      if ( life_beh_ == 1 ) { // WIGGLE
+        int arm_pos = 10;
+        int lean_pos = 30;
+        this->arms(arm_pos, -arm_pos);
+        this->lean(CMD_LEFT, lean_pos, 500);
+        this->arms(-arm_pos, arm_pos);
+        this->lean(CMD_RIGHT, lean_pos, 1000);
+        this->arms(0, 0);
+        this->standStraight(500);
+      } else if ( life_beh_ == 2) { // STRETCH LEFT LEG
+        this->testLeg(CMD_LEFT, 4000);
+      } else if ( life_beh_ == 3 ) { // STRETCH RIGHT LEG
+        this->testLeg(CMD_RIGHT, 4000);
+      } else if ( life_beh_ == 4 ) {  // SIT BACK
+        this->sitBack(2500);
+        sleepms(1000);
+        this->arms(0, 0);
+        this->standStraight(500);
+      } else if ( life_beh_ == 5) { // ARM STRETCH
+        this->arms(0, 0);
+        this->swingArms(120, -120, 2000, 1);
+        this->swingArms(-120, 120, 2000, 1);
+      }
+      life_beh_ = 0;
+    }
+
+    sleepms(stop_wait);
+    this->arms(10, 10);
+    robot_->setServo(EYES, EYES_ANGRY);
+    sleepms(stop_wait * 2);
+    this->arms(0, 0);
+  }
+  float batt = robot_->getBattery();
+  robot_->setServo(EYES, EYES_WIDE * (1.0 - batt));
+  sleepms(stop_wait);
+  robot_->stopRobot();
+
+  life_timer_.start();
+}
+
+void CmdServer::setLife(bool enable) {
+  life_enabled_ = enable;
+  if (true) {life_timer_.start();} else {life_timer_.stop();}
 }
 
 /**
@@ -55,10 +100,11 @@ void CmdServer::lifeCB(const ros::TimerEvent& e) {
  */
 void CmdServer::runCommand(vector<int> data) {
   busy_ = true;
-  ROS_INFO_STREAM("CMD: " << data[0]);
-  for (int i = 0; i < data.size(); ++i) {
-    ROS_INFO_STREAM("CMDData " << i << ": " << data[i]);
-  }
+  this->setLife(false);
+  // ROS_INFO_STREAM("CMD: " << data[0]);
+  // for (int i = 0; i < data.size(); ++i) {
+  //   ROS_INFO_STREAM("CMDData " << i << ": " << data[i]);
+  // }
   int l = data.size();
   switch (data[0]) {
   case CMD_HELLO: hello(); break;
@@ -154,9 +200,9 @@ void CmdServer::walk(int num_steps, int turn, int move_time, int step_length,
   // Start walking!
   for (int step_num = 0; step_num < num_steps; step_num++) {
     if (leftFoot) {
-      tInterp = genStepLeft(robot_, step_length, turn, step_time, 0);
+      tInterp = genStepLeft(robot_, step_length, turn, step_time);
     } else {
-      tInterp = genStepRight(robot_, step_length, turn, step_time, 0);
+      tInterp = genStepRight(robot_, step_length, turn, step_time);
     }
     runTrajectory(robot_, tInterp);
     leftFoot = !leftFoot;
@@ -321,55 +367,55 @@ void CmdServer::arms(int r_angle, int l_angle) {
 
 void CmdServer::demo() {
   float alpha = 0;
-  int delay = 20000;
+  int delay = INTERP_DT * 1000;
   std::map<int, float> angles;
   for (int i = 0; i < NUMJOINTS; ++i) {
     angles[i] = robot_->jangles_[i];
   }
-  // Default Arm positions
-  robot_->setServo(EYES, EYES_NORMAL);
+  this->eyes(EYES_NORMAL);
   sleep(1);
-  robot_->setServo(EYES, EYES_ANGRY);
+  this->eyes(EYES_ANGRY);
   sleep(1);
-  robot_->setServo(EYES, EYES_EXCITED);
+  this->eyes(EYES_EXCITED);
   sleep(1);
-  robot_->setServo(EYES, EYES_WIDE);
+  this->eyes(EYES_WIDE);
   sleep(1);
 
   // Test eyes
   for (alpha = 0; alpha < 6.28; alpha += 0.1) {
-    robot_->setServo(EYES, EYES_ANGRY * sin(alpha));;
-    usleep(delay);
+    robot_->setServo(EYES, EYES_ANGRY * sin(alpha));
+    sleepms(delay);
   }
 
+  this->swingArms(100, 100, 2.0, 8);
   // Arms Swing Together
-  for (alpha = 0; alpha < 12.56; alpha += 0.1) {
-    angles[RARM] = 100 * sin(alpha);
-    angles[LARM] = 100 * sin(alpha);
-    robot_->setServos(angles);
-    usleep(delay);
-  }
+  // for (alpha = 0; alpha < 12.56; alpha += 0.1) {
+  //   angles[RARM] = 100 * sin(alpha);
+  //   angles[LARM] = 100 * sin(alpha);
+  //   robot_->setServos(angles);
+  //   sleepms(delay);
+  // }
 
   // Arms Swing Opposed
   for (alpha = 0; alpha < 12.56; alpha += 0.1) {
     angles[RARM] = 100 * sin(alpha);
     angles[LARM] = -100 * sin(alpha);
     robot_->setServos(angles);
-    usleep(delay);
+    sleepms(delay);
   }
 
   // Forward and Backward
   for (alpha = 0; alpha < 12.56; alpha += 0.1) {
     angles[RHIP] = 45 * sin(alpha); angles[LHIP] = angles[RHIP];
     robot_->setServos(angles);
-    usleep(delay);
+    sleepms(delay);
   }
 
   // Side to Side
   for (alpha = 0; alpha < 12.56; alpha += 0.1) {
     angles[RKNEE] = 45 * sin(alpha); angles[LKNEE] = angles[RKNEE];
     robot_->setServos(angles);
-    usleep(delay);
+    sleepms(delay);
   }
 
   // Feet Twist in same direction
@@ -379,44 +425,37 @@ void CmdServer::demo() {
     angles[RTWIST] = 45 * sin(alpha); angles[LTWIST] = angles[RTWIST];
     robot_->setServos(angles);
 
-    usleep(delay);
+    sleepms(delay);
   }
 
   // Feet Twist in opposite direction
   for (alpha = 0; alpha < 12.56; alpha += 0.1) {
     angles[RTWIST] = 20 * sin(alpha); angles[LTWIST] = 0 - angles[RTWIST];
     robot_->setServos(angles);
-    usleep(delay);
+    sleepms(delay);
   }
 
-  // Test Left Leg
+  this->testLeg(CMD_LEFT, 4.0);  // Test Left Leg
+  this->testLeg(CMD_RIGHT, 4.0); // Test Right Leg
+
   data_t genTraj;
-  genTraj = genRaisedFootTwistLeft(robot_, 4.0);
-  runTrajectory(robot_, genTraj);
-  genTraj.clear();
-
-  // Test Right Leg
-  genTraj = genRaisedFootTwistRight(robot_, 4.0);
-  runTrajectory(robot_, genTraj);
-  genTraj.clear();
-
   // Walk about
   for (int numstep = 0; numstep < 1; numstep++) {
-    genTraj = genStepLeft(robot_, 0, 25, 1.25, 0);
+    genTraj = genStepLeft(robot_, 0, 25, 1.25);
     runTrajectory(robot_, genTraj);
     genTraj.clear();
 
-    genTraj = genStepRight(robot_, 0, 25, 1.25, 0);
+    genTraj = genStepRight(robot_, 0, 25, 1.25);
     runTrajectory(robot_, genTraj);
     genTraj.clear();
   }
 
   for (int numstep = 0; numstep < 2; numstep++) {
-    genTraj = genStepLeft(robot_, 80, 0, 1.5, 0);
+    genTraj = genStepLeft(robot_, 80, 0, 1.5);
     runTrajectory(robot_, genTraj);
     genTraj.clear();
 
-    genTraj = genStepRight(robot_, 80, 0, 1.5, 0);
+    genTraj = genStepRight(robot_, 80, 0, 1.5);
     runTrajectory(robot_, genTraj);
     genTraj.clear();
   }
@@ -431,6 +470,41 @@ void CmdServer::demo() {
   runTrajectory(robot_, genTraj);
   genTraj.clear();
   robot_->celebSound(1.4);
+}
+
+void CmdServer::testLeg(int side, int duration) {
+  data_t genTraj;
+  if (side == CMD_LEFT) {
+    genTraj = genRaisedFootTwistLeft(robot_, ((float)duration) / 1000);
+    runTrajectory(robot_, genTraj);
+  } else if (side == CMD_RIGHT) {
+    genTraj = genRaisedFootTwistRight(robot_, ((float)duration) / 1000);
+    runTrajectory(robot_, genTraj);
+  }
+}
+
+void CmdServer::sitBack(int duration) {
+  data_t genTraj = genSitBack(robot_, ((float)duration) / 1000);
+  runTrajectory(robot_, genTraj);
+}
+
+void CmdServer::swingArms(int r_arm, int l_arm, int duration, int cycles) {
+  int delay;
+  if (duration == 0) {
+    delay = INTERP_DT * 1000;
+  } else {
+    delay = duration / (15.7 * cycles);
+  }
+  std::map<int, float> angles;
+  for (int i = 0; i < NUMJOINTS; ++i) {
+    angles[i] = robot_->jangles_[i];
+  }
+  for (float alpha = 0; alpha < (1.57 * cycles); alpha += 0.1) {
+    angles[RARM] = r_arm * sin(alpha);
+    angles[LARM] = l_arm * sin(alpha);
+    robot_->setServos(angles);
+    sleepms(delay);
+  }
 }
 
 void CmdServer::sideStep(int side, int num_steps, int movetime,
@@ -510,7 +584,8 @@ void CmdServer::loadParams() {
     ros::shutdown();
   }
   nh_.param("ready_move", ready_move_, true);
-  nh_.param("life_time", life_time_, 30);
+  nh_.param("life_enabled", life_enabled_, true);
+  nh_.param("life_time", life_time_, 5);
 }
 
 void CmdServer::init() {
@@ -520,6 +595,7 @@ void CmdServer::init() {
   resp_request_ = false;
   interp_dt_ = 0.02;
   turn_spot_ = false;
+  life_beh_ = 1;
 }
 
 void CmdServer::rosSetup() {
