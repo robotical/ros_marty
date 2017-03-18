@@ -124,6 +124,7 @@ class CmdServer {
   void battCB(const std_msgs::Float32& msg) {batt_data_ = msg;}
   void currCB(const marty_msgs::MotorCurrents& msg) {curr_data_ = msg;}
   void ballCB(const geometry_msgs::Pose2D& msg) {ball_pos_ = msg;}
+  void lifeCB(const ros::TimerEvent& e);
   bool cmd_service(marty_msgs::Command::Request&  req,
                    marty_msgs::Command::Response& res);
 
@@ -135,6 +136,7 @@ class CmdServer {
 
   // Params
   bool ready_move_;
+  int life_time_;
 
   // Variables
   MartyCore* robot_;
@@ -156,6 +158,7 @@ class CmdServer {
   ros::Subscriber curr_sub_;
   ros::Subscriber ball_sub_;
   ros::ServiceServer cmd_srv_;
+  ros::Timer life_timer_;
 
  public:
   CmdServer(ros::NodeHandle& nh);

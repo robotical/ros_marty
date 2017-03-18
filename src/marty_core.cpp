@@ -61,6 +61,8 @@ void MartyCore::loadParams() {
 
 void MartyCore::init() {
   falling_.data = false;
+  battery_max_ = 8.4;
+  battery_min_ = 6.4;
   odom_setup_ = false;
   for (int ji = 0; ji < NUMJOINTS; ji++) { jangles_.push_back(0); }
 
@@ -192,6 +194,12 @@ void MartyCore::jointsCB(const marty_msgs::ServoMsgArray::ConstPtr& msg) {
   for (int id = 0; id < msg->servo_msg.size(); ++id) {
     this->updateJointState(msg->servo_msg[id]);
   }
+}
+
+float MartyCore::getBattery() {
+  float percentage = (battery_val_ - battery_min_) /
+                     (battery_max_ - battery_min_);
+  return percentage;
 }
 
 /**

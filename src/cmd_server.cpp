@@ -17,17 +17,32 @@ void CmdServer::robotReady() {
   if (ready_move_) {
     robot_->enableRobot();
     robot_->readySound();
-    this->lean(CMD_LEFT, 30, 500);
-    this->lean(CMD_RIGHT, 30, 1000);
+    int arm_pos = 20;
+    int lean_pos = 30;
+    this->arms(arm_pos, -arm_pos);
+    this->lean(CMD_LEFT, lean_pos, 500);
+    this->arms(-arm_pos, arm_pos);
+    this->lean(CMD_RIGHT, lean_pos, 1000);
+    this->arms(0, 0);
     this->standStraight(500);
+
+    float batt = robot_->getBattery();
 
     sleepms(stop_wait);
     robot_->setServo(EYES, EYES_ANGRY);
+    this->arms(arm_pos, arm_pos);
     sleepms(stop_wait * 2);
-    robot_->setServo(EYES, EYES_NORMAL);
+    robot_->setServo(EYES, EYES_WIDE * (1.0 - batt));
+    this->arms(0, 0);
     sleepms(stop_wait);
+    robot_->stopRobot();
   }
-  robot_->stopRobot();
+  life_timer_.start();
+}
+
+void CmdServer::lifeCB(const ros::TimerEvent& e) {
+  life_timer_.stop();
+  this->robotReady();
 }
 
 /**
@@ -495,6 +510,7 @@ void CmdServer::loadParams() {
     ros::shutdown();
   }
   nh_.param("ready_move", ready_move_, true);
+  nh_.param("life_time", life_time_, 30);
 }
 
 void CmdServer::init() {
@@ -513,6 +529,10 @@ void CmdServer::rosSetup() {
   curr_sub_ = nh_.subscribe("motor_currents", 1000, &CmdServer::currCB, this);
   ball_sub_ = nh_.subscribe("ball_pos", 1000, &CmdServer::ballCB, this);
   cmd_srv_ = nh_.advertiseService("command", &CmdServer::cmd_service, this);
+  if (life_time_ > 0) {
+    life_timer_ = nh_.createTimer(ros::Duration(life_time_), &CmdServer::lifeCB,
+                                  this, true, false);
+  }
 }
 
 bool CmdServer::cmd_service(marty_msgs::Command::Request& req,

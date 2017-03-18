@@ -79,6 +79,7 @@ class MartyCore {
   // Getters/Setters
   bool hasFallen() {return falling_.data;}
   bool fallDisabled() {return fall_disable_;}
+  float getBattery();
 
   // Public Variables
   robotJoint joint_[NUMJOINTS]; //  Internal Joint Data
@@ -116,6 +117,8 @@ class MartyCore {
   marty_msgs::Accelerometer accel_;
   std_msgs::Bool falling_;
   float battery_val_;
+  float battery_max_;
+  float battery_min_;
   marty_msgs::GPIOs gpios_val_;
   std::deque<double> roll_;
   std::deque<double> pitch_;
