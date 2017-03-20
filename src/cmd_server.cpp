@@ -36,7 +36,7 @@ void CmdServer::robotReady() {
     robot_->stopRobot();
   }
   life_timer_.start();
-  robot_->loadSound("ready");
+  // robot_->loadSound("ready");
 }
 
 void CmdServer::lifeCB(const ros::TimerEvent& e) {
