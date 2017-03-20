@@ -17,25 +17,26 @@ void CmdServer::robotReady() {
   if (ready_move_) {
     robot_->enableRobot();
     robot_->readySound();
-    int arm_pos = 10;
+    int arm_pos = 20;
     int lean_pos = 30;
     this->lean(CMD_LEFT, lean_pos, 500);
     this->lean(CMD_RIGHT, lean_pos, 1000);
     this->arms(0, 0);
     this->standStraight(500);
 
-    float batt = robot_->getBattery();
 
     sleepms(stop_wait);
     this->arms(arm_pos, arm_pos);
-    robot_->setServo(EYES, EYES_ANGRY);
+    robot_->setServo(EYES, EYES_NORMAL);
     sleepms(stop_wait * 2);
     this->arms(0, 0);
+    float batt = robot_->getBattery();
     robot_->setServo(EYES, EYES_WIDE * (1.0 - batt));
     sleepms(stop_wait);
     robot_->stopRobot();
   }
   life_timer_.start();
+  robot_->loadSound("ready");
 }
 
 void CmdServer::lifeCB(const ros::TimerEvent& e) {
@@ -65,23 +66,29 @@ void CmdServer::lifeCB(const ros::TimerEvent& e) {
         this->standStraight(500);
       } else if ( life_beh_ == 5) { // ARM STRETCH
         this->arms(0, 0);
-        this->swingArms(120, -120, 2000, 1);
-        this->swingArms(-120, 120, 2000, 1);
+        marty_msgs::ServoMsgArray s_array;
+        marty_msgs::ServoMsg r_arm; r_arm.servo_id = RARM; r_arm.servo_cmd = 120;
+        marty_msgs::ServoMsg l_arm; l_arm.servo_id = LARM; l_arm.servo_cmd = -120;
+        s_array.servo_msg.push_back(r_arm); s_array.servo_msg.push_back(l_arm);
+        // this->swingArms(120, -120, 2000, 2);
+        // this->swingArms(-120, 120, 2000, 2);
+        this->swingJoints(s_array, 2000, 2);
+        s_array.servo_msg[0].servo_cmd = -120;
+        s_array.servo_msg[1].servo_cmd = 120;
+        this->swingJoints(s_array, 2000, 2);
       }
       life_beh_ = 0;
     }
 
     sleepms(stop_wait);
-    this->arms(10, 10);
-    robot_->setServo(EYES, EYES_ANGRY);
+    robot_->setServo(EYES, EYES_NORMAL);
     sleepms(stop_wait * 2);
-    this->arms(0, 0);
+    float batt = robot_->getBattery();
+    robot_->setServo(EYES, EYES_WIDE * (1.0 - batt));
+    sleepms(stop_wait);
+    robot_->stopRobot();
   }
-  float batt = robot_->getBattery();
-  robot_->setServo(EYES, EYES_WIDE * (1.0 - batt));
-  sleepms(stop_wait);
-  robot_->stopRobot();
-
+  life_timer_.setPeriod(ros::Duration(life_time_ + (rand() % 20)));
   life_timer_.start();
 }
 
@@ -367,7 +374,7 @@ void CmdServer::arms(int r_angle, int l_angle) {
 
 void CmdServer::demo() {
   float alpha = 0;
-  int delay = INTERP_DT * 1000;
+  int delay = (int)(INTERP_DT * 1000.0);
   std::map<int, float> angles;
   for (int i = 0; i < NUMJOINTS; ++i) {
     angles[i] = robot_->jangles_[i];
@@ -387,22 +394,14 @@ void CmdServer::demo() {
     sleepms(delay);
   }
 
-  this->swingArms(100, 100, 2.0, 8);
-  // Arms Swing Together
-  // for (alpha = 0; alpha < 12.56; alpha += 0.1) {
-  //   angles[RARM] = 100 * sin(alpha);
-  //   angles[LARM] = 100 * sin(alpha);
-  //   robot_->setServos(angles);
-  //   sleepms(delay);
-  // }
+  this->swingArms(100, 100, 2000, 8);  // Arms Swing Together
+  this->swingArms(100, -100, 2000, 8); // Arms Swing Opposed
 
-  // Arms Swing Opposed
-  for (alpha = 0; alpha < 12.56; alpha += 0.1) {
-    angles[RARM] = 100 * sin(alpha);
-    angles[LARM] = -100 * sin(alpha);
-    robot_->setServos(angles);
-    sleepms(delay);
-  }
+  marty_msgs::ServoMsgArray h_array;
+  marty_msgs::ServoMsg r_hip; r_hip.servo_id = RHIP; r_hip.servo_cmd = 45;
+  marty_msgs::ServoMsg l_hip; l_hip.servo_id = LHIP; l_hip.servo_cmd = 45;
+  h_array.servo_msg.push_back(r_hip); h_array.servo_msg.push_back(l_hip);
+  this->swingJoints(h_array, 2000, 8);
 
   // Forward and Backward
   for (alpha = 0; alpha < 12.56; alpha += 0.1) {
@@ -489,21 +488,47 @@ void CmdServer::sitBack(int duration) {
 }
 
 void CmdServer::swingArms(int r_arm, int l_arm, int duration, int cycles) {
-  int delay;
-  if (duration == 0) {
-    delay = INTERP_DT * 1000;
-  } else {
-    delay = duration / (15.7 * cycles);
-  }
+  if (duration <= 0) { duration = 2000; }
+  if (cycles <= 0) { cycles = 4; }
+  int delay = (int)(INTERP_DT * 1000.0);
+  int steps = duration / delay;
+
   std::map<int, float> angles;
   for (int i = 0; i < NUMJOINTS; ++i) {
     angles[i] = robot_->jangles_[i];
   }
-  for (float alpha = 0; alpha < (1.57 * cycles); alpha += 0.1) {
+  float alpha = 0;
+  float inc = (1.57 * cycles) / steps;
+  for (int s = 0; s < steps; ++s) {
     angles[RARM] = r_arm * sin(alpha);
     angles[LARM] = l_arm * sin(alpha);
     robot_->setServos(angles);
     sleepms(delay);
+    alpha += inc;
+  }
+}
+
+void CmdServer::swingJoints(marty_msgs::ServoMsgArray servo_array, int duration,
+                            int cycles) {
+  if (duration <= 0) { duration = 2000; }
+  if (cycles <= 0) { cycles = 4; }
+  int delay = (int)(INTERP_DT * 1000.0);
+  int steps = duration / delay;
+
+  std::map<int, float> angles;
+  for (int i = 0; i < NUMJOINTS; ++i) {
+    angles[i] = robot_->jangles_[i];
+  }
+  float alpha = 0;
+  float inc = (1.57 * cycles) / steps;
+  for (int s = 0; s < steps; ++s) {
+    for (int i = 0; i < servo_array.servo_msg.size(); ++i) {
+      angles[servo_array.servo_msg[i].servo_id] =
+        servo_array.servo_msg[i].servo_cmd * sin(alpha);
+    }
+    robot_->setServos(angles);
+    sleepms(delay);
+    alpha += inc;
   }
 }
 
@@ -585,7 +610,7 @@ void CmdServer::loadParams() {
   }
   nh_.param("ready_move", ready_move_, true);
   nh_.param("life_enabled", life_enabled_, true);
-  nh_.param("life_time", life_time_, 5);
+  nh_.param("life_time", life_time_, 60);
 }
 
 void CmdServer::init() {

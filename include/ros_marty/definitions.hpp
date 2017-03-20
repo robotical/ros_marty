@@ -76,8 +76,8 @@ const std::vector <int> JOINT_MULT = {
   1,  //   "RHIP",
   1,  //   "RTWIST",
   1,  //   "RKNEE",
-  2,  //   "LARM",
-  2,  //   "RARM",
+  1,  //   "LARM",
+  1,  //   "RARM",
   1,  //   "EYES",
   1,  //   "AUX1",
   1   //   "AUX2"

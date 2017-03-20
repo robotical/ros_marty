@@ -17,6 +17,8 @@
 
 // Marty
 #include "marty_msgs/Command.h"
+#include "marty_msgs/ServoMsg.h"
+#include "marty_msgs/ServoMsgArray.h"
 #include "ros_marty/marty_core.hpp"
 #include "ros_marty/trajectory.hpp"
 
@@ -121,7 +123,9 @@ class CmdServer {
 
   void testLeg(int side, int duration);
   void sitBack(int duration);
-  void swingArms(int r_arm, int l_arm, int duration = 0, int cycles = 2);
+  void swingArms(int r_arm, int l_arm, int duration = 2000, int cycles = 4);
+  void swingJoints(marty_msgs::ServoMsgArray, int duration = 2000,
+                   int cycles = 4);
 
   void gpioCB(const marty_msgs::GPIOs& msg) {gpio_data_ = msg;}
   void accelCB(const marty_msgs::Accelerometer& msg) {accel_data_ = msg;}
