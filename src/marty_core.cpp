@@ -62,7 +62,7 @@ void MartyCore::loadParams() {
 void MartyCore::init() {
   falling_.data = false;
   battery_max_ = 8.4;
-  battery_min_ = 6.4;
+  battery_min_ = 6.8;
   odom_setup_ = false;
   for (int ji = 0; ji < NUMJOINTS; ji++) { jangles_.push_back(0); }
 
@@ -114,12 +114,15 @@ void MartyCore::rosSetup() {
   servo_array_pub_ = nh_.advertise<marty_msgs::ServoMsgArray>("servo_array", 10);
   joints_pub_ = nh_.advertise<sensor_msgs::JointState>("joint_states", 10);
   sound_pub_ =  nh_.advertise<marty_msgs::SoundArray>("sound", 10);
+  keyframe_pub_ =  nh_.advertise<marty_msgs::KeyframeArray>("keyframes", 10);
   // SUBSCRIBERS
   joint_sub_ = nh_.subscribe("servo", 1000, &MartyCore::jointCB, this);
   joints_sub_ = nh_.subscribe("servo_array", 1000, &MartyCore::jointsCB, this);
   accel_sub_ = nh_.subscribe("accel", 1000, &MartyCore::accelCB, this);
   batt_sub_ = nh_.subscribe("battery", 1000, &MartyCore::battCB, this);
   gpio_sub_ = nh_.subscribe("gpios", 1000, &MartyCore::gpioCB, this);
+  sound_sub_ = nh_.subscribe("sound_file", 1000, &MartyCore::soundCB, this);
+  keyframe_sub_ = nh_.subscribe("keyframe_file", 1000, &MartyCore::kfCB, this);
   // SERVICES
   fall_dis_srv_ = nh_.advertiseService("fall_disable",
                                        &MartyCore::setFallDetector, this);
@@ -397,44 +400,30 @@ void MartyCore::tfCB(const ros::TimerEvent& e) {
   odom_tf_.header.stamp = ros::Time::now(); odom_br_.sendTransform(odom_tf_);
 }
 
+void MartyCore::loadSound(std::string sound_name) {
+  std::ifstream soundFile;
+  std::string path = ros::package::getPath("ros_marty");
+  soundFile.open(path + "/cfg/sounds/" + sound_name + ".csv");
+  if (soundFile.is_open()) {
+    marty_msgs::SoundArray sound_array;
+    marty_msgs::Sound sound;
+    std::string line; char c = ','; // Comma delimmited
+    while (std::getline(soundFile, line)) {
+      std::istringstream iss(line);
+      float f1, f2, t;
+      if (!(iss >> f1 >> c >> f2 >> c >> t)) { ROS_ERROR("FILE ERROR"); break;}
+      sound.freq1 = f1; sound.freq2 = f2; sound.duration = t;
+      sound_array.sound.push_back(sound);
+    }
+    this->playSoundArray(sound_array);
+    soundFile.close();
+  } else {
+    ROS_ERROR_STREAM("COULD NOT OPEN FILE: " << sound_name << ".csv");
+  }
+}
+
 void MartyCore::readySound() {
-  marty_msgs::SoundArray sound_array;
-  marty_msgs::Sound sound;
-  sound.freq1 = NOTE_A6; sound.freq2 = NOTE_A6; sound.duration = 0.10;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = NOTE_A6; sound.freq2 = NOTE_A5; sound.duration = 0.30;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = NOTE_A5; sound.freq2 = NOTE_A5; sound.duration = 0.10;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = NOTE_A5; sound.freq2 = NOTE_E6; sound.duration = 0.30;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = NOTE_E6; sound.freq2 = NOTE_E6; sound.duration = 0.10;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = NOTE_E6; sound.freq2 = NOTE_E5; sound.duration = 0.30;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = NOTE_E5; sound.freq2 = NOTE_E5; sound.duration = 0.10;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = NOTE_E5; sound.freq2 = NOTE_A5; sound.duration = 0.30;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = NOTE_A5; sound.freq2 = NOTE_A5; sound.duration = 0.10;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = NOTE_A5; sound.freq2 = NOTE_A4; sound.duration = 0.30;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = NOTE_A4; sound.freq2 = NOTE_A4; sound.duration = 0.10;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = SILENCE; sound.freq2 = SILENCE; sound.duration = 0.20;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = NOTE_A4; sound.freq2 = NOTE_A4; sound.duration = 0.10;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = SILENCE; sound.freq2 = SILENCE; sound.duration = 0.05;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = NOTE_A4; sound.freq2 = NOTE_A4; sound.duration = 0.10;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = SILENCE; sound.freq2 = SILENCE; sound.duration = 0.05;
-  sound_array.sound.push_back(sound);
-  sound.freq1 = NOTE_A4; sound.freq2 = NOTE_A4; sound.duration = 0.40;
-  sound_array.sound.push_back(sound);
-  this->playSoundArray(sound_array);
+  this->loadSound("ready");
 }
 
 void MartyCore::celebSound(float sound_time) {
@@ -499,6 +488,49 @@ void MartyCore::stopSound() {
   marty_msgs::SoundArray sound_array;
   sound_array.sound.push_back(sound);
   sound_pub_.publish(sound_array);
+}
+
+void MartyCore::loadKeyframes(std::string keyframes_name, int move_time) {
+  std::ifstream keyframeFile;
+  std::string path = ros::package::getPath("ros_marty");
+  keyframeFile.open(path + "/cfg/keyframes/" + keyframes_name + ".csv");
+  if (keyframeFile.is_open()) {
+    int total_time = 0; std::string line; char c = ','; // Comma delimmited
+    while (std::getline(keyframeFile, line)) {
+      std::istringstream iss(line);
+      int t;
+      if (!(iss >> t)) {ROS_ERROR("NO KF DATA"); break;}
+      total_time += t;
+    }
+    float new_time = (float)move_time / 1000.0;
+    if (move_time == 0) { new_time = total_time; } // Use Keyframe duration
+    keyframeFile.clear();
+    keyframeFile.seekg(0, std::ios::beg);
+    marty_msgs::KeyframeArray k_a;
+    while (std::getline(keyframeFile, line)) {
+      std::istringstream iss(line);
+      marty_msgs::Keyframe k;
+      if (!(iss >> k.time)) {ROS_ERROR("NO KF DATA"); break;} // Get Keyframe time
+      k.time = k.time * (new_time / total_time);
+      marty_msgs::ServoMsgArray s_a;
+      marty_msgs::ServoMsg s;
+      int  id, cmd;
+      while (iss >> c >> id >> c >> cmd) {
+        s.servo_id = id; s.servo_cmd = cmd;
+        s_a.servo_msg.push_back(s);
+      }
+      k.servo_array = s_a;
+      k_a.keyframe.push_back(k);
+    }
+    this->sendKeyframes(k_a);
+    keyframeFile.close();
+  } else {
+    ROS_WARN_STREAM("COULD NOT OPEN FILE: " << keyframes_name << ".csv");
+  }
+}
+
+void MartyCore::sendKeyframes(marty_msgs::KeyframeArray k_array) {
+  keyframe_pub_.publish(k_array);
 }
 
 int MartyCore::jointPosToServoCmd(int id, float pos) {
