@@ -35,7 +35,7 @@ void CmdServer::robotReady() {
     sleepms(stop_wait);
     robot_->stopRobot();
   }
-  // life_timer_.start();
+  life_timer_.start();
   // robot_->loadSound("ready");
 }
 
@@ -611,8 +611,9 @@ void CmdServer::loadParams() {
     ros::shutdown();
   }
   nh_.param("ready_move", ready_move_, true);
-  nh_.param("life_enabled", life_enabled_, true);
-  nh_.param("life_time", life_time_, 60);
+  nh_.param("/marty/life_enabled", life_enabled_, true);
+  nh_.param("/marty/life_time", life_time_, 60);
+  //ROS_INFO_STREAM(life_enabled_ << " " << life_time_ << std::endl);
 }
 
 void CmdServer::init() {
