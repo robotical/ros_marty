@@ -142,10 +142,6 @@ class MartyCore {
   marty_msgs::ServoMsg servo_msg_;
   sensor_msgs::JointState joints_;  // ROS Joint State msg
   // marty_msgs::ServoMsgArray servo_msg_array_;
-  geometry_msgs::TransformStamped cam_tf_;
-  geometry_msgs::TransformStamped odom_tf_;
-  geometry_msgs::TransformStamped l_f_tf_;
-  geometry_msgs::TransformStamped r_f_tf_;
 
   ros::Publisher  enable_pub_;
   ros::Publisher  falling_pub_;
@@ -174,6 +170,10 @@ class MartyCore {
   tf2_ros::Buffer tf_buff_;
   tf2_ros::TransformListener tf_ls_;
   ros::Timer tf_timer_;
+  geometry_msgs::TransformStamped cam_tf_;
+  geometry_msgs::TransformStamped odom_tf_;
+  geometry_msgs::TransformStamped l_f_tf_;
+  geometry_msgs::TransformStamped r_f_tf_;
 };
 
 #endif  /* MARTY_CORE_HPP */

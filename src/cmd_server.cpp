@@ -35,7 +35,7 @@ void CmdServer::robotReady() {
     sleepms(stop_wait);
     robot_->stopRobot();
   }
-  life_timer_.start();
+  // life_timer_.start();
   // robot_->loadSound("ready");
 }
 
@@ -220,8 +220,10 @@ void CmdServer::kick(int side, int move_time) {
   data_t tInterp;
   float kicktime = ((float)move_time) / 1000;
   if (side == CMD_LEFT) {
+    // robot_->loadKeyframes("kick_left", move_time);
     tInterp = genKickLeft(robot_, kicktime);
   } else {
+    // robot_->loadKeyframes("kick_right", move_time);
     tInterp = genKickRight(robot_, kicktime);
   }
   runTrajectory(robot_, tInterp);
@@ -532,24 +534,24 @@ void CmdServer::swingJoints(marty_msgs::ServoMsgArray servo_array, int duration,
   }
 }
 
-void CmdServer::sideStep(int side, int num_steps, int movetime,
+void CmdServer::sideStep(int side, int num_steps, int move_time,
                          int step_length) {
   if ((side == CMD_LEFT) || (side == CMD_RIGHT)) {
     int opp_side = 1 - side;  //  Switch left/right
     if (side == CMD_LEFT) {step_length = -step_length;} // Invert step direction
     for (int step = 0; step < num_steps; ++step) {
-      this->moveJoint(side, J_KNEE, -step_length, (movetime / 4));
-      this->moveJoint(opp_side, J_KNEE, step_length, (movetime / 4));
-      this->moveJoint(side, J_KNEE, 0, (movetime / 4));
-      this->moveJoint(opp_side, J_KNEE, 0, (movetime / 4));
+      this->moveJoint(side, J_KNEE, -step_length, (move_time / 4));
+      this->moveJoint(opp_side, J_KNEE, step_length, (move_time / 4));
+      this->moveJoint(side, J_KNEE, 0, (move_time / 4));
+      this->moveJoint(opp_side, J_KNEE, 0, (move_time / 4));
     }
   } else { ROS_ERROR("Can only sidestep left or right"); }
 }
 
-void CmdServer::standStraight(int movetime) {
+void CmdServer::standStraight(int move_time) {
   data_t tSetpoints, tInterp; deque<float> tline(robot_->jangles_);
   tline.push_front(0); tSetpoints.push_back(tline);
-  float straight_time = ((float)movetime) / 1000;
+  float straight_time = ((float)move_time) / 1000;
   setPointsLegsZero(tSetpoints, straight_time);
   interpTrajectory(tSetpoints, tInterp, interp_dt_);
   runTrajectory(robot_, tInterp);

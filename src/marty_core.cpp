@@ -262,6 +262,17 @@ void MartyCore::updateJointState(marty_msgs::ServoMsg servo) {
   }
 }
 
+/**
+ * @brief Accelerometer data callback. Accelerometer data used to detect falls
+ * and for walking odometry.
+ * @details If accelerometer y (TODO change to z) is smaller than the fall
+ * threshold, a warning is printed and the motors are disabled. When Marty
+ * returns to upright position motors are re-enabled.
+ * Accelerometer data is used for estimating roll/pitch/yaw. Due to gimbal
+ * lock and evil quaternions yaw is not useful, but the others are published.
+ *
+ * @param msg Accelerometer msg pointer
+ */
 void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
   accel_ = *msg;
   // Check if Robot is falling
@@ -389,6 +400,12 @@ void MartyCore::updateOdom() {
   }
 }
 
+/**
+ * @brief Publishes TF and joint states on a timer callback
+ * @details Updates all Marty's TF, joint states and odometry information
+ *
+ * @param e Timer event callback at 10Hz
+ */
 void MartyCore::tfCB(const ros::TimerEvent& e) {
   // Publish Joint States
   joints_.header.stamp = ros::Time::now(); joints_pub_.publish(joints_);
@@ -400,6 +417,13 @@ void MartyCore::tfCB(const ros::TimerEvent& e) {
   odom_tf_.header.stamp = ros::Time::now(); odom_br_.sendTransform(odom_tf_);
 }
 
+/**
+ * @brief Loads sound file and if well-formed plays it
+ * @details Sound files are stored in the cfg/sounds folder in the ros_marty
+ * package as .csv files
+ *
+ * @param sound_name Name of sound file without .csv
+ */
 void MartyCore::loadSound(std::string sound_name) {
   std::ifstream soundFile;
   std::string path = ros::package::getPath("ros_marty");
@@ -495,28 +519,31 @@ void MartyCore::loadKeyframes(std::string keyframes_name, int move_time) {
   std::string path = ros::package::getPath("ros_marty");
   keyframeFile.open(path + "/cfg/keyframes/" + keyframes_name + ".csv");
   if (keyframeFile.is_open()) {
-    int total_time = 0; std::string line; char c = ','; // Comma delimmited
+    float total_time = 0; std::string line; char c = ','; // Comma delimmited
     while (std::getline(keyframeFile, line)) {
       std::istringstream iss(line);
-      int t;
-      if (!(iss >> t)) {ROS_ERROR("NO KF DATA"); break;}
-      total_time += t;
+      float t;
+      if (!(iss >> t)) {ROS_ERROR("NO T DATA"); break;}
+      // ROS_WARN_STREAM("TIME: " << t);
+      total_time = t;
     }
     float new_time = (float)move_time / 1000.0;
     if (move_time == 0) { new_time = total_time; } // Use Keyframe duration
+    // ROS_WARN_STREAM("NEW_TIME: " << new_time);
     keyframeFile.clear();
     keyframeFile.seekg(0, std::ios::beg);
     marty_msgs::KeyframeArray k_a;
     while (std::getline(keyframeFile, line)) {
       std::istringstream iss(line);
       marty_msgs::Keyframe k;
-      if (!(iss >> k.time)) {ROS_ERROR("NO KF DATA"); break;} // Get Keyframe time
+      if (!(iss >> k.time)) {ROS_ERROR("NO KT DATA"); break;} // Get Keyframe time
       k.time = k.time * (new_time / total_time);
       marty_msgs::ServoMsgArray s_a;
       marty_msgs::ServoMsg s;
       int  id, cmd;
       while (iss >> c >> id >> c >> cmd) {
         s.servo_id = id; s.servo_cmd = cmd;
+        // ROS_WARN_STREAM("ID: " << id << " CMD: " << cmd);
         s_a.servo_msg.push_back(s);
       }
       k.servo_array = s_a;

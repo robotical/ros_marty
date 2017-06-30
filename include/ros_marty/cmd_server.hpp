@@ -111,10 +111,10 @@ class CmdServer {
   void lean(int dir, int amount = 100, int move_time = 2000);
   void liftLeg(int leg, int amount = 100, int move_time = 2000);
   void lowerLeg(int move_time = 1000);
-  void moveJoint(int side, int joint, int amount, int movetime = 2000);
-  void sideStep(int side, int num_steps = 1, int movetime = 1000,
+  void moveJoint(int side, int joint, int amount, int move_time = 2000);
+  void sideStep(int side, int num_steps = 1, int move_time = 1000,
                 int step_length = 50);
-  void standStraight(int movetime = 1000);
+  void standStraight(int move_time = 1000);
   void playSound(int freq = 440, int duration = 500);
   void playSounds(std::vector<int> sounds);
   void stopRobot();

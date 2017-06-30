@@ -354,8 +354,8 @@ data_t Trajectory::genKickLeft(MartyCore* robot, float period) {
   interpTrajectory(tSetpoints, tInterp, INTERP_DT);
 
   return tInterp;
-
 }
+
 data_t Trajectory::genKickRight(MartyCore* robot, float period) {
   data_t tSetpoints, tInterp;
   deque<float> tline(robot->jangles_);
