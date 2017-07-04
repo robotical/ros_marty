@@ -275,17 +275,17 @@ void MartyCore::updateJointState(marty_msgs::ServoMsg servo) {
  */
 void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
   accel_ = *msg;
-  // Check if Robot is falling
-  if ((accel_.y < fall_thr_) && (falling_.data == false)) {
-    ROS_WARN_STREAM("Robot Falling! " << accel_.y << std::endl);
+	 // Check if Robot is falling
+  if ((accel_.z < fall_thr_) && (falling_.data == false)) {
+    ROS_WARN_STREAM("Robot Falling! " << accel_.z << std::endl);
     falling_.data = true;
     if (fall_disable_) {
       enable_robot_.data = false; enable_pub_.publish(enable_robot_);
     }
     falling_pub_.publish(falling_);
   }
-  if ((accel_.y > fall_thr_) && (falling_.data == true)) {
-    ROS_WARN_STREAM("Robot Stable! " << accel_.y << std::endl);
+  if ((accel_.z > fall_thr_) && (falling_.data == true)) {
+    ROS_WARN_STREAM("Robot Stable! " << accel_.z << std::endl);
     falling_.data = false;
     if (fall_disable_) {
       enable_robot_.data = true; enable_pub_.publish(enable_robot_);
@@ -293,9 +293,9 @@ void MartyCore::accelCB(const marty_msgs::Accelerometer::ConstPtr& msg) {
     falling_pub_.publish(falling_);
   }
   // Obtain Roll, Pitch and Yaw angles from accelerometer data
-  double roll = atan2(accel_.y, accel_.x) - 1.57;
-  double pitch = atan2(accel_.y, accel_.z) - 1.57;
-  double yaw = atan2(accel_.z, accel_.x);
+  double roll = atan2(accel_.z, accel_.y) - 1.57;
+  double pitch = atan2(accel_.z, accel_.x) - 1.57;
+  double yaw = atan2(accel_.y, accel_.x);
   // Perform moving window average to filter accelerator noise
   roll_.push_front(roll); pitch_.push_front(pitch); yaw_.push_front(yaw);
   int s = roll_.size();
