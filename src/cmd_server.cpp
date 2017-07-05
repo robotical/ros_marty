@@ -35,67 +35,67 @@ void CmdServer::robotReady() {
     sleepms(stop_wait);
     robot_->stopRobot();
   }
-  // life_timer_.start();
+  life_timer_.start();
   // robot_->loadSound("ready");
 }
-//
-// void CmdServer::lifeCB(const ros::TimerEvent& e) {
-//   life_timer_.stop();
-//   if (life_enabled_) {
-//     robot_->enableRobot();
-//     if ( life_beh_ == 0 ) { // JUST EYEBROWS
-//       life_beh_ = rand() % 5 + 1;
-//     } else {
-//       if ( life_beh_ == 1 ) { // WIGGLE
-//         int arm_pos = 10;
-//         int lean_pos = 30;
-//         this->arms(arm_pos, -arm_pos);
-//         this->lean(CMD_LEFT, lean_pos, 500);
-//         this->arms(-arm_pos, arm_pos);
-//         this->lean(CMD_RIGHT, lean_pos, 1000);
-//         this->arms(0, 0);
-//         this->standStraight(500);
-//       } else if ( life_beh_ == 2) { // STRETCH LEFT LEG
-//         this->testLeg(CMD_LEFT, 4000);
-//       } else if ( life_beh_ == 3 ) { // STRETCH RIGHT LEG
-//         this->testLeg(CMD_RIGHT, 4000);
-//       } else if ( life_beh_ == 4 ) {  // SIT BACK
-//         this->sitBack(2500);
-//         sleepms(1000);
-//         this->arms(0, 0);
-//         this->standStraight(500);
-//       } else if ( life_beh_ == 5) { // ARM STRETCH
-//         this->arms(0, 0);
-//         marty_msgs::ServoMsgArray s_array;
-//         marty_msgs::ServoMsg r_arm; r_arm.servo_id = RARM; r_arm.servo_cmd = 120;
-//         marty_msgs::ServoMsg l_arm; l_arm.servo_id = LARM; l_arm.servo_cmd = -120;
-//         s_array.servo_msg.push_back(r_arm); s_array.servo_msg.push_back(l_arm);
-//         // this->swingArms(120, -120, 2000, 2);
-//         // this->swingArms(-120, 120, 2000, 2);
-//         this->swingJoints(s_array, 2000, 2);
-//         s_array.servo_msg[0].servo_cmd = -120;
-//         s_array.servo_msg[1].servo_cmd = 120;
-//         this->swingJoints(s_array, 2000, 2);
-//       }
-//       life_beh_ = 0;
-//     }
-//
-//     sleepms(stop_wait);
-//     robot_->setServo(EYES, EYES_NORMAL);
-//     sleepms(stop_wait * 2);
-//     float batt = robot_->getBattery();
-//     robot_->setServo(EYES, EYES_WIDE * (1.0 - batt));
-//     sleepms(stop_wait);
-//     robot_->stopRobot();
-//   }
-//   life_timer_.setPeriod(ros::Duration(life_time_ + (rand() % 20)));
-//   life_timer_.start();
-// }
-//
-// void CmdServer::setLife(bool enable) {
-//   life_enabled_ = enable;
-//   if (true) {life_timer_.start();} else {life_timer_.stop();}
-// }
+
+void CmdServer::lifeCB(const ros::TimerEvent& e) {
+  life_timer_.stop();
+  if (life_enabled_) {
+    robot_->enableRobot();
+    if ( life_beh_ == 0 ) { // JUST EYEBROWS
+      life_beh_ = rand() % 5 + 1;
+    } else {
+      if ( life_beh_ == 1 ) { // WIGGLE
+        int arm_pos = 10;
+        int lean_pos = 30;
+        this->arms(arm_pos, -arm_pos);
+        this->lean(CMD_LEFT, lean_pos, 500);
+        this->arms(-arm_pos, arm_pos);
+        this->lean(CMD_RIGHT, lean_pos, 1000);
+        this->arms(0, 0);
+        this->standStraight(500);
+      } else if ( life_beh_ == 2) { // STRETCH LEFT LEG
+        this->testLeg(CMD_LEFT, 4000);
+      } else if ( life_beh_ == 3 ) { // STRETCH RIGHT LEG
+        this->testLeg(CMD_RIGHT, 4000);
+      } else if ( life_beh_ == 4 ) {  // SIT BACK
+        this->sitBack(2500);
+        sleepms(1000);
+        this->arms(0, 0);
+        this->standStraight(500);
+      } else if ( life_beh_ == 5) { // ARM STRETCH
+        this->arms(0, 0);
+        marty_msgs::ServoMsgArray s_array;
+        marty_msgs::ServoMsg r_arm; r_arm.servo_id = RARM; r_arm.servo_cmd = 120;
+        marty_msgs::ServoMsg l_arm; l_arm.servo_id = LARM; l_arm.servo_cmd = -120;
+        s_array.servo_msg.push_back(r_arm); s_array.servo_msg.push_back(l_arm);
+        // this->swingArms(120, -120, 2000, 2);
+        // this->swingArms(-120, 120, 2000, 2);
+        this->swingJoints(s_array, 2000, 2);
+        s_array.servo_msg[0].servo_cmd = -120;
+        s_array.servo_msg[1].servo_cmd = 120;
+        this->swingJoints(s_array, 2000, 2);
+      }
+      life_beh_ = 0;
+    }
+
+    sleepms(stop_wait);
+    robot_->setServo(EYES, EYES_NORMAL);
+    sleepms(stop_wait * 2);
+    float batt = robot_->getBattery();
+    robot_->setServo(EYES, EYES_WIDE * (1.0 - batt));
+    sleepms(stop_wait);
+    robot_->stopRobot();
+  }
+  life_timer_.setPeriod(ros::Duration(life_time_ + (rand() % 20)));
+  life_timer_.start();
+}
+
+void CmdServer::setLife(bool enable) {
+  life_enabled_ = enable;
+  if (true) {life_timer_.start();} else {life_timer_.stop();}
+}
 
 /**
  * @brief Runs commands received by the server
@@ -107,7 +107,7 @@ void CmdServer::robotReady() {
  */
 void CmdServer::runCommand(vector<int> data) {
   busy_ = true;
-  // this->setLife(false);
+  this->setLife(false);
   // ROS_INFO_STREAM("CMD: " << data[0]);
   // for (int i = 0; i < data.size(); ++i) {
   //   ROS_INFO_STREAM("CMDData " << i << ": " << data[i]);
@@ -611,8 +611,8 @@ void CmdServer::loadParams() {
     ros::shutdown();
   }
   nh_.param("ready_move", ready_move_, true);
-  // nh_.param("/marty/life_enabled", life_enabled_, true);
-  // nh_.param("/marty/life_time", life_time_, 60);
+  nh_.param("/marty/life_enabled", life_enabled_, true);
+  nh_.param("/marty/life_time", life_time_, 60);
   //ROS_INFO_STREAM(life_enabled_ << " " << life_time_ << std::endl);
 }
 
@@ -623,7 +623,7 @@ void CmdServer::init() {
   resp_request_ = false;
   interp_dt_ = 0.02;
   turn_spot_ = false;
-  // life_beh_ = 1;
+  life_beh_ = 1;
 }
 
 void CmdServer::rosSetup() {
@@ -633,10 +633,10 @@ void CmdServer::rosSetup() {
   curr_sub_ = nh_.subscribe("motor_currents", 1000, &CmdServer::currCB, this);
   ball_sub_ = nh_.subscribe("ball_pos", 1000, &CmdServer::ballCB, this);
   cmd_srv_ = nh_.advertiseService("command", &CmdServer::cmd_service, this);
-  // if (life_time_ > 0) {
-  //   life_timer_ = nh_.createTimer(ros::Duration(life_time_), &CmdServer::lifeCB,
-  //                                 this, true, false);
-  // }
+  if (life_time_ > 0) {
+    life_timer_ = nh_.createTimer(ros::Duration(life_time_), &CmdServer::lifeCB,
+                                  this, true, false);
+  }
 }
 
 bool CmdServer::cmd_service(marty_msgs::Command::Request& req,
