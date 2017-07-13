@@ -93,7 +93,7 @@ ser = serial.Serial(
 # Setup Publisher Info
 pub_topic_info = TopicInfo()
 pub_topic_info.topic_id = 101
-pub_topic_info.topic_name = "/chatter"
+pub_topic_info.topic_name = "/marty/chatter"
 pub_topic_info.message_type = "std_msgs/String"
 pub_topic_info.md5sum = MD5_String
 pub_topic_info.buffer_size = 256
@@ -104,7 +104,7 @@ pub_msg.data = "Testing!"
 # Setup Subscriber Info
 sub_topic_info = TopicInfo()
 sub_topic_info.topic_id = 103
-sub_topic_info.topic_name = "/servo_array"
+sub_topic_info.topic_name = "/marty/servo_array"
 # sub_topic_info.message_type = "std_msgs/Int8"
 # sub_topic_info.md5sum = MD5_Int8
 sub_topic_info.message_type = "marty_msgs/ServoMsgArray"

@@ -5,7 +5,7 @@ import rospy
 from marty_msgs.msg import ServoMsg, ServoMsgArray
 
 def talker():
-    pub = rospy.Publisher('/servo_array', ServoMsgArray, queue_size=10)
+    pub = rospy.Publisher('/marty/servo_array', ServoMsgArray, queue_size=10)
     rospy.init_node('servo_test', anonymous=True)
     rate = rospy.Rate(10)
     servo_cmd_array = ServoMsgArray()
