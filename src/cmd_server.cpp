@@ -155,10 +155,8 @@ void CmdServer::kick(int side, int move_time) {
   data_t tInterp;
   float kicktime = ((float)move_time) / 1000;
   if (side == CMD_LEFT) {
-    // robot_->loadKeyframes("kick_left", move_time);
     tInterp = genKickLeft(robot_, kicktime);
   } else {
-    // robot_->loadKeyframes("kick_right", move_time);
     tInterp = genKickRight(robot_, kicktime);
   }
   runTrajectory(robot_, tInterp);

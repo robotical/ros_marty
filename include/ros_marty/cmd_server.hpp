@@ -29,7 +29,8 @@
 #include "marty_msgs/Accelerometer.h"
 #include "marty_msgs/MotorCurrents.h"
 
-#define PORT  1569
+// #define PORT  1569
+#define PORT 1569
 
 // This wait time is required when a stop message is sent straight after
 #define stop_wait 150  //  Wait time between instantaneous servo commands

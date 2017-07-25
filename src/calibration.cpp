@@ -138,6 +138,7 @@ void Calibration::writeCalVals() {
   std::ofstream of (path + "/cfg/joint_calib.cfg");
   of << "# ****************************************************************************\n"
      << "# **WARNING: DO NOT CHANGE ANYTHING BELOW UNLESS YOU KNOW WHAT YOU'RE DOING!**\n"
+     << "# *****************Below are Marty's calibration saved values*****************\n"
      << "# ****************************************************************************\n";
   of << "calibrated: true\n\n";
   for (int id = 0; id < NUMJOINTS; ++id) {
