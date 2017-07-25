@@ -21,7 +21,7 @@ Calibration::~Calibration() {
 }
 
 void Calibration::loadParams() {
-  nh_.param("/marty/calibrated", calibrated_, false);
+  nh_.param("calibrated", calibrated_, false);
   if (!calibrated_) {
     WARN("Marty has not been calibrated before!" << std::endl);
   }
@@ -39,15 +39,15 @@ void Calibration::init() {
   }
   for (int id = 0; id < NUMJOINTS; ++id) {
     int val;
-    nh_.param("/marty/" + NAMES[id] + "/zero", val, 0);
+    nh_.param(NAMES[id] + "/zero", val, 0);
     joints_.servo_msg[id].servo_cmd = val;
     cal_vals_.servo_msg[id].servo_cmd = val;
   }
 }
 
 void Calibration::rosSetup() {
-  joint_pub_ = nh_.advertise<marty_msgs::ServoMsgArray>("/servo_array", 10);
-  enable_pub_ = nh_.advertise<std_msgs::Bool>("/enable_motors", 10);
+  joint_pub_ = nh_.advertise<marty_msgs::ServoMsgArray>("servo_array", 10);
+  enable_pub_ = nh_.advertise<std_msgs::Bool>("enable_motors", 10);
 }
 
 void Calibration::calibrate() {
@@ -138,6 +138,7 @@ void Calibration::writeCalVals() {
   std::ofstream of (path + "/cfg/joint_calib.cfg");
   of << "# ****************************************************************************\n"
      << "# **WARNING: DO NOT CHANGE ANYTHING BELOW UNLESS YOU KNOW WHAT YOU'RE DOING!**\n"
+     << "# *****************Below are Marty's calibration saved values*****************\n"
      << "# ****************************************************************************\n";
   of << "calibrated: true\n\n";
   for (int id = 0; id < NUMJOINTS; ++id) {

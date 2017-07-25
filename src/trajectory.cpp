@@ -81,8 +81,11 @@ bool Trajectory::runTrajectory(MartyCore* robot, data_t& traj) {
 }
 
 data_t Trajectory::genStepLeft(MartyCore* robot, int stepLength, int turn,
-                               float period,
-                               char flags) {
+                               float period) {
+  int arm_move1 = stepLength / 5;
+  int arm_move2 = stepLength / 1.6;
+  int arm_move3 = stepLength * 1.6;
+  int arm_move4 = stepLength / 1.25;
   data_t tSetpoints, tInterp;
   deque<float> tline(robot->jangles_);
   tline.push_front(0.0);
@@ -90,33 +93,57 @@ data_t Trajectory::genStepLeft(MartyCore* robot, int stepLength, int turn,
 
   tline[0] = 0.25 * period;
   tline[1 + RKNEE] = WKSMALL; tline[1 + LKNEE] = WKSMALL;
+  tline[1 + RARM] = arm_move1; tline[1 + LARM] = -arm_move1;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.375 * period;
   tline[1 + LKNEE] = WKLARGE;
+  tline[1 + RARM] = arm_move2; tline[1 + LARM] = -arm_move2;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.625 * period;
   tline[1 + RHIP] = stepLength / 2; tline[1 + LHIP] = 0 - stepLength / 2;
   tline[1 + LTWIST] = 0; tline[1 + RTWIST] = turn;
+  tline[1 + RARM] = arm_move3; tline[1 + LARM] = -arm_move3;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.75 * period;
   tline[1 + LKNEE] = WKSMALL;
+  tline[1 + RARM] = arm_move4; tline[1 + LARM] = -arm_move4;
   tSetpoints.push_back(tline);
 
   tline[0] = period;
   tline[1 + RKNEE] = 0; tline[1 + LKNEE] = 0;
+  tline[1 + RARM] = 0; tline[1 + LARM] = 0;
   tSetpoints.push_back(tline);
 
-  interpTrajectory(tSetpoints, tInterp, 0.02);
+  interpTrajectory(tSetpoints, tInterp, INTERP_DT);
+
+  return tInterp;
+}
+
+data_t Trajectory::genSitBack(MartyCore* robot, float period) {
+  data_t tSetpoints, tInterp;
+  deque<float> tline(robot->jangles_);
+  tline.push_front(0.0);
+  tSetpoints.push_back(tline);
+
+  tline[0] = period;
+  tline[1 + RHIP] = -80; tline[1 + LHIP] = -80;
+  tline[1 + RARM] = 100; tline[1 + LARM] = 100;
+  tSetpoints.push_back(tline);
+
+  interpTrajectory(tSetpoints, tInterp, INTERP_DT);
 
   return tInterp;
 }
 
 data_t Trajectory::genStepRight(MartyCore* robot, int stepLength, int turn,
-                                float period,
-                                char flags) {
+                                float period) {
+  int arm_move1 = stepLength / 5;
+  int arm_move2 = stepLength / 1.6;
+  int arm_move3 = stepLength * 1.6;
+  int arm_move4 = stepLength / 1.25;
   data_t tSetpoints, tInterp;
   deque<float> tline(robot->jangles_);
   tline.push_front(0.0);
@@ -124,26 +151,31 @@ data_t Trajectory::genStepRight(MartyCore* robot, int stepLength, int turn,
 
   tline[0] = 0.25 * period;
   tline[1 + RKNEE] = 0 - WKSMALL; tline[1 + LKNEE] = 0 - WKSMALL;
+  tline[1 + RARM] = -arm_move1; tline[1 + LARM] = arm_move1;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.375 * period;
   tline[1 + RKNEE] = 0 - WKLARGE;
+  tline[1 + RARM] = -arm_move2; tline[1 + LARM] = arm_move2;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.625 * period;
   tline[1 + RHIP] = 0 - stepLength / 2; tline[1 + LHIP] = stepLength / 2;
   tline[1 + LTWIST] = turn; tline[1 + RTWIST] = 0;
+  tline[1 + RARM] = -arm_move3; tline[1 + LARM] = arm_move3;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.75 * period;
   tline[1 + RKNEE] = 0 - WKSMALL;
+  tline[1 + RARM] = -arm_move4; tline[1 + LARM] = arm_move4;
   tSetpoints.push_back(tline);
 
   tline[0] = period;
   tline[1 + RKNEE] = 0; tline[1 + LKNEE] = 0;
+  tline[1 + RARM] = 0; tline[1 + LARM] = 0;
   tSetpoints.push_back(tline);
 
-  interpTrajectory(tSetpoints, tInterp, 0.02);
+  interpTrajectory(tSetpoints, tInterp, INTERP_DT);
 
   return tInterp;
 
@@ -157,7 +189,7 @@ data_t Trajectory::genCelebration(MartyCore* robot, float move_time) {
   int lean_amount = 40;
 
   tline[0] = 0.1 * move_time;
-  tline[1 + RARM] = 200; tline[1 + LARM] = 200;
+  tline[1 + RARM] = 60; tline[1 + LARM] = 60;
   tline[1 + LTWIST] = 0; tline[1 + RTWIST] = 0;
   tline[1 + EYES] = -20;
   tSetpoints.push_back(tline);
@@ -166,13 +198,13 @@ data_t Trajectory::genCelebration(MartyCore* robot, float move_time) {
   for (float t = 0.2; t < 1.0; t += 0.2) {
     tline[0] = t * move_time;
     tline[1 + LKNEE] = lean_amount; tline[1 + RKNEE] = lean_amount;
-    tline[1 + RARM] = 200; tline[1 + LARM] = 50;
+    tline[1 + RARM] = 60; tline[1 + LARM] = 10;
     tline[1 + EYES] = -0;
     tSetpoints.push_back(tline);
 
     tline[0] = (t + 0.1) * move_time;
     tline[1 + LKNEE] = -lean_amount; tline[1 + RKNEE] = -lean_amount;
-    tline[1 + RARM] = 50; tline[1 + LARM] = 200;
+    tline[1 + RARM] = 10; tline[1 + LARM] = 60;
     tline[1 + EYES] = -40;
     tSetpoints.push_back(tline);
   }
@@ -184,7 +216,7 @@ data_t Trajectory::genCelebration(MartyCore* robot, float move_time) {
   tline[1 + EYES] = 0;
   tSetpoints.push_back(tline);
 
-  interpTrajectory(tSetpoints, tInterp, 0.05);
+  interpTrajectory(tSetpoints, tInterp, INTERP_DT);
 
   return tInterp;
 }
@@ -201,7 +233,7 @@ data_t Trajectory::genRaisedFootTwistLeft(MartyCore* robot, float period) {
 
   tline[0] = 0.3 * period;
   tline[1 + LKNEE] = WKLARGE;
-  tline[1 + LHIP] = -150;
+  tline[1 + LHIP] = -110;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.4 * period;
@@ -230,7 +262,7 @@ data_t Trajectory::genRaisedFootTwistLeft(MartyCore* robot, float period) {
   tline[1 + LKNEE] = 0; tline[1 + RKNEE] = 0;
   tSetpoints.push_back(tline);
 
-  interpTrajectory(tSetpoints, tInterp, 0.02);
+  interpTrajectory(tSetpoints, tInterp, INTERP_DT);
 
   return tInterp;
 
@@ -248,7 +280,7 @@ data_t Trajectory::genRaisedFootTwistRight(MartyCore* robot, float period) {
 
   tline[0] = 0.3 * period;
   tline[1 + RKNEE] = -WKLARGE;
-  tline[1 + RHIP] = -150;
+  tline[1 + RHIP] = -110;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.4 * period;
@@ -277,7 +309,7 @@ data_t Trajectory::genRaisedFootTwistRight(MartyCore* robot, float period) {
   tline[1 + LKNEE] = 0; tline[1 + RKNEE] = 0;
   tSetpoints.push_back(tline);
 
-  interpTrajectory(tSetpoints, tInterp, 0.02);
+  interpTrajectory(tSetpoints, tInterp, INTERP_DT);
 
   return tInterp;
 
@@ -291,19 +323,24 @@ data_t Trajectory::genKickLeft(MartyCore* robot, float period) {
 
   tline[0] = 0.2 * period;
   tline[1 + RKNEE] = WKSMALL; tline[1 + LKNEE] = WKSMALL;
+  tline[1 + RARM] = 20;  tline[1 + LARM] = 20;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.375 * period;
   tline[1 + LKNEE] = WKLARGE;
+  tline[1 + LHIP] = 10;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.425 * period;
-  tline[1 + LHIP] = -150;
+  tline[1 + LHIP] = -120;
+  tline[1 + EYES] = 30;
+  tline[1 + RARM] = -20;  tline[1 + LARM] = -20;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.575 * period;
-  tline[1 + LHIP] = 0;
-  tline[1 + RHIP] = 0;
+  tline[1 + LHIP] = 0; tline[1 + RHIP] = 0;
+  tline[1 + EYES] = 0;
+  tline[1 + RARM] = 0;  tline[1 + LARM] = 0;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.7 * period;
@@ -314,11 +351,11 @@ data_t Trajectory::genKickLeft(MartyCore* robot, float period) {
   tline[1 + LKNEE] = 0; tline[1 + RKNEE] = 0;
   tSetpoints.push_back(tline);
 
-  interpTrajectory(tSetpoints, tInterp, 0.02);
+  interpTrajectory(tSetpoints, tInterp, INTERP_DT);
 
   return tInterp;
-
 }
+
 data_t Trajectory::genKickRight(MartyCore* robot, float period) {
   data_t tSetpoints, tInterp;
   deque<float> tline(robot->jangles_);
@@ -327,19 +364,24 @@ data_t Trajectory::genKickRight(MartyCore* robot, float period) {
 
   tline[0] = 0.2 * period;
   tline[1 + RKNEE] = -WKSMALL; tline[1 + LKNEE] = -WKSMALL;
+  tline[1 + RARM] = 20;  tline[1 + LARM] = 20;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.375 * period;
   tline[1 + RKNEE] = -WKLARGE;
+  tline[1 + RHIP] = 10;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.425 * period;
-  tline[1 + RHIP] = -150;
+  tline[1 + RHIP] = -120;
+  tline[1 + EYES] = 30;
+  tline[1 + RARM] = -20;  tline[1 + LARM] = -20;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.575 * period;
-  tline[1 + LHIP] = 0;
-  tline[1 + RHIP] = 0;
+  tline[1 + LHIP] = 0; tline[1 + RHIP] = 0;
+  tline[1 + EYES] = 0;
+  tline[1 + RARM] = 0;  tline[1 + LARM] = 0;
   tSetpoints.push_back(tline);
 
   tline[0] = 0.7 * period;
@@ -350,7 +392,7 @@ data_t Trajectory::genKickRight(MartyCore* robot, float period) {
   tline[1 + LKNEE] = 0; tline[1 + RKNEE] = 0;
   tSetpoints.push_back(tline);
 
-  interpTrajectory(tSetpoints, tInterp, 0.05);
+  interpTrajectory(tSetpoints, tInterp, INTERP_DT);
   return tInterp;
 
 }
@@ -412,7 +454,7 @@ data_t Trajectory::genGetUp(MartyCore* robot) {
   tline[1 + RKNEE] = 0; tline[1 + LKNEE] = 0;
   tSetpoints.push_back(tline);
 
-  interpTrajectory(tSetpoints, tInterp, 0.02);
+  interpTrajectory(tSetpoints, tInterp, INTERP_DT);
 
   return tInterp;
 
@@ -429,7 +471,7 @@ data_t Trajectory::genReturnToZero(MartyCore* robot, float period) {
     *di = 0;
   tline[0] = period;
   tSetpoints.push_back(tline);
-  interpTrajectory(tSetpoints, tInterp, 0.02);
+  interpTrajectory(tSetpoints, tInterp, INTERP_DT);
   return tInterp;
 }
 
@@ -464,7 +506,7 @@ bool Trajectory::setPointsLeanForward(data_t& tSetpoints, int leanAmount,
   deque <float> tline(tSetpoints.back());
 
   tline[0] += period;
-  tline[1 + RHIP] = -leanAmount; tline[1 + LHIP] = -leanAmount;
+  tline[1 + RHIP] = leanAmount; tline[1 + LHIP] = leanAmount;
   tSetpoints.push_back(tline);
 
   return 1;
@@ -475,7 +517,7 @@ bool Trajectory::setPointsLeanBackward(data_t& tSetpoints, int leanAmount,
   deque <float> tline(tSetpoints.back());
 
   tline[0] += period;
-  tline[1 + RHIP] = leanAmount; tline[1 + LHIP] = leanAmount;
+  tline[1 + RHIP] = -leanAmount; tline[1 + LHIP] = -leanAmount;
   tSetpoints.push_back(tline);
 
   return 1;
@@ -996,9 +1038,9 @@ int Trajectory::hipToBeSquare(MartyCore* robot, int robotID) {
   //
 
 
-  interpTrajectory(tLegs, tiLegs, 0.05);
-  interpTrajectory(tArms, tiArms, 0.05);
-  interpTrajectory(tEyes, tiEyes, 0.05);
+  interpTrajectory(tLegs, tiLegs, INTERP_DT);
+  interpTrajectory(tArms, tiArms, INTERP_DT);
+  interpTrajectory(tEyes, tiEyes, INTERP_DT);
   genTraj = combineLegsArmsEyes(tiLegs, tiArms, tiEyes);
 
   runTrajectory(robot, genTraj);
@@ -1033,7 +1075,7 @@ int Trajectory::hipToBeSquare(MartyCore* robot, int robotID) {
   setPointsLeanLeft(tLegs, 0, BEAT);
   setPointsLeanLeft(tLegs, 0, BEAT);
 
-  interpTrajectory(tLegs, tiLegs, 0.05);
+  interpTrajectory(tLegs, tiLegs, INTERP_DT);
   runTrajectory(robot, tiLegs);
 
   tline = tLegs.back();
@@ -1085,8 +1127,8 @@ int Trajectory::hipToBeSquare(MartyCore* robot, int robotID) {
 
   vector<bool> ji(1 + NUMJOINTS, 0);
   ji[1 + RARM] = 1; ji[1 + LARM] = 1;
-  interpTrajectory(tLegs, tiLegs, 0.05);
-  interpTrajectory(tArms, tiArms, 0.05);
+  interpTrajectory(tLegs, tiLegs, INTERP_DT);
+  interpTrajectory(tArms, tiArms, INTERP_DT);
   genTraj = combineTrajectories(tiLegs, tiArms, ji);
 
   runTrajectory(robot, genTraj);
@@ -1155,7 +1197,7 @@ int Trajectory::rollerSkate(MartyCore* robot) {
   setPointsLegsZero(tLegs, 1.0);
   setPointsSkateLeft(tLegs, 0, 3.0);
 
-  interpTrajectory(tLegs, tiLegs, 0.05);
+  interpTrajectory(tLegs, tiLegs, INTERP_DT);
 
   runTrajectory(robot, tiLegs);
 

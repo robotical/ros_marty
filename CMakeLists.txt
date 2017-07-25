@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   #rospy
   roscpp
   roslib
+  tf2_ros
   std_msgs
   marty_msgs
 )

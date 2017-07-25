@@ -1,6 +1,3 @@
-// functions for loading and saving csv files into and out of 2 dimensional deques
-// borrowed from t'internet
-
 #ifndef DATA_T_HPP
 #define DATA_T_HPP
 

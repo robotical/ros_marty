@@ -11,15 +11,18 @@
   <!-- <url type="website">http://wiki.ros.org/ros_marty</url> -->
   <url type="website">http://robotical.io/</url>
 
-  <author email="jane.doe@example.com">Jane Doe</author>
+  <author email="alex.bordallo@robotical.io">Alejandro Bordallo</author>
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>marty_msgs</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
+  <build_depend>tf2_ros</build_depend>
   <run_depend>marty_msgs</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>std_msgs</run_depend>
+  <run_depend>tf2_ros</run_depend>
+  <run_depend>marty_description</run_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

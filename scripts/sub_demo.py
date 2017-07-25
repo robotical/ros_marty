@@ -39,7 +39,7 @@ def listener():
 
     rospy.init_node('sub_demo', anonymous=True)
 
-    rospy.Subscriber("/gpios", GPIOs, callback)
+    rospy.Subscriber("/marty/gpios", GPIOs, callback)
 
     rospy.spin()
 

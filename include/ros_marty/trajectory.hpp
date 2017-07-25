@@ -15,23 +15,20 @@
 #define WKSMALL 45 // 65 //62 // 75 // 45
 #define WKLARGE 125
 #define HIPSTEP 30
+#define INTERP_DT 0.02
 
 namespace Trajectory {
-// protected:
-
-// public:
 
 float gettime();
 
 bool interpTrajectory(data_t tIn, data_t& tOut, float dt);
 void printTrajectory(data_t& traj);
 bool runTrajectory(MartyCore* robot, data_t& traj);
-data_t genStepLeft(MartyCore* robot, int stepLength, int turn, float period,
-                   char flags);
-data_t genStepRight(MartyCore* robot, int stepLength, int turn, float period,
-                    char flags);
+data_t genStepLeft(MartyCore* robot, int stepLength, int turn, float period);
+data_t genStepRight(MartyCore* robot, int stepLength, int turn, float period);
 data_t genKickLeft(MartyCore* robot, float period);
 data_t genKickRight(MartyCore* robot, float period);
+data_t genSitBack(MartyCore* robot, float period);
 data_t genGetUp(MartyCore* robot);
 data_t genRaisedFootTwistLeft(MartyCore* robot, float period);
 data_t genRaisedFootTwistRight(MartyCore* robot, float period);
@@ -70,9 +67,6 @@ data_t combineLegsArmsEyes(data_t& legs, data_t& arms, data_t& eyes);
 int hipToBeSquare(MartyCore* robot, int robotID);
 bool setPointsSkateLeft(data_t& tSetpoints, float amount, float period);
 int rollerSkate(MartyCore* robot);
-
-// private:
-
 };
 
 #endif  /* MARTY_TRAJECTORY_HPP */
