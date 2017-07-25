@@ -51,8 +51,6 @@ def talker():
         pub.publish(servo_cmd_array)
         rate.sleep()
 
-def walker():
-
 if __name__ == '__main__':
     try:
         talker()
