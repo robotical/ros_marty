@@ -2,7 +2,7 @@
 
 <launch>
     <arg name="camera" value="false" /> <!-- If camera is installed -->
-    <param name="use_sim_time" value="false"/> <!-- Enable if Simulated -->
+    <param name="use_sim_time" value="true"/> <!-- Enable if Simulated -->
     <rosparam file="$(find ros_marty)/cfg/joint_calib.cfg" command="load" />
     <rosparam file="$(find ros_marty)/cfg/config.cfg" command="load" />
     <param name="launched" value="true"/>
@@ -18,4 +18,5 @@
         <param name="autorepeat_rate" value="10"/>
     </node>
     <node name="marty_joy" pkg="marty_joy" type="marty_joy"/>
+    <node name="marty_odom" pkg="ros_marty" type="odom_node.py" output="screen"/>
 </launch>
