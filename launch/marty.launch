@@ -8,8 +8,9 @@
     <param name="launched" value="true"/>
     <node name="cmd_server" pkg="ros_marty" type="cmd_server" output="screen" clear_params="true"/>
     <param name="camera" value="$(arg camera)"/>
+    <param name="raspicam_on" value="$(arg camera)"/>
     <group if="$(arg camera)">
-      <include file="$(find raspicam)/launch/raspicam.launch"/>
+        <include file="$(find raspicam)/launch/raspicam.launch"/>
     </group>
     <param name="robot_description" textfile="$(find marty_description)/urdf/marty.urdf" />
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
