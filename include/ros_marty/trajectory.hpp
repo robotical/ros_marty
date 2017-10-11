@@ -12,8 +12,8 @@
 #define TRAJ_TOZERO   0x02
 
 // temp defs
-#define WKSMALL 45 // 65 //62 // 75 // 45
-#define WKLARGE 125
+#define WKSMALL 32 // 65 //62 // 75 // 45
+#define WKLARGE 90
 #define HIPSTEP 30
 #define INTERP_DT 0.02
 
